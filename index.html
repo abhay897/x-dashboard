@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aura Network Premium Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #030108;
+            color: #ffffff;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .phone-screen {
+            width: 360px;
+            height: 720px;
+            background: radial-gradient(circle at top, #140d2b 0%, #05020c 100%);
+            border-radius: 28px;
+            box-shadow: 0px 25px 50px rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .app-title {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 800;
+            color: #00f2fe;
+            letter-spacing: 2px;
+            margin-top: 30px;
+            text-shadow: 0 0 15px rgba(0, 242, 254, 0.6);
+        }
+        .main-card {
+            background: rgba(15, 10, 32, 0.65);
+            border: 1px solid rgba(0, 242, 254, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            margin: 20px;
+            padding: 25px;
+            text-align: center;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .balance-label {
+            font-size: 11px;
+            color: #8a7fa4;
+            letter-spacing: 1.5px;
+        }
+        .balance-val {
+            font-size: 38px;
+            font-weight: 700;
+            color: #ffffff;
+            margin: 8px 0;
+            text-shadow: 0 0 20px rgba(0, 242, 254, 0.3);
+        }
+        .speed-badge {
+            background: linear-gradient(135deg, rgba(0, 242, 254, 0.1) 0%, rgba(79, 172, 254, 0.1) 100%);
+            border: 1px solid rgba(0, 242, 254, 0.4);
+            color: #00f2fe;
+            padding: 6px 18px;
+            border-radius: 20px;
+            display: inline-block;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        /* Quantum Orb Effect (No more broken images) */
+        .orb-container {
+            width: 140px;
+            height: 140px;
+            margin: 15px auto;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .quantum-orb {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0,242,254,0.2) 0%, rgba(157,78,221,0.1) 70%);
+            border: 2px dashed #00f2fe;
+            box-shadow: 0 0 30px rgba(0, 242, 254, 0.5), inset 0 0 20px rgba(157, 78, 221, 0.4);
+            animation: rotateOrb 8s linear infinite;
+        }
+        .orb-icon {
+            position: absolute;
+            font-size: 40px;
+            color: #ffffff;
+            text-shadow: 0 0 15px #00f2fe;
+            animation: pulseIcon 2s ease-in-out infinite;
+        }
+        /* Glowing Cyan Button */
+        .mining-btn {
+            background: rgba(0, 242, 254, 0.05);
+            border: 2px solid #00f2fe;
+            color: #ffffff;
+            padding: 16px 32px;
+            font-size: 16px;
+            font-weight: 700;
+            border-radius: 35px;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.3), inset 0 0 15px rgba(0, 242, 254, 0.2);
+            transition: 0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            letter-spacing: 1px;
+        }
+        .mining-btn:active {
+            transform: scale(0.98);
+            background: rgba(0, 242, 254, 0.2);
+        }
+        /* Status Panel */
+        .status-bar {
+            background: rgba(10, 6, 22, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 14px;
+            margin: 0 20px 20px 20px;
+            padding: 14px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+        }
+        .status-left { color: #00f2fe; font-weight: 500; }
+        .status-right { color: #00ffaa; font-weight: bold; text-shadow: 0 0 8px #00ffaa; }
+
+        /* Bottom Nav Bar */
+        .bottom-nav {
+            background: #05020a;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            height: 70px;
+            display: flex;
+        }
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #6c6382;
+            font-size: 11px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .nav-item i { font-size: 20px; margin-bottom: 5px; }
+        .nav-item.active { color: #00f2fe; text-shadow: 0 0 10px rgba(0, 242, 254, 0.4); }
+
+        /* Keyframe Animations */
+        @keyframes rotateOrb {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes pulseIcon {
+            0%, 100% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.1); opacity: 1; text-shadow: 0 0 25px #00f2fe; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="phone-screen">
+        <div class="app-title">AURA NETWORK</div>
+
+        <div class="main-card">
+            <div>
+                <div class="balance-label">VERIFIED BALANCE ($AURA)</div>
+                <div class="balance-val" id="balance">0.0000</div>
+                <div class="speed-badge">
+                    <i class="fas fa-bolt"></i> Speed: <span id="speed">10.0</span> $AURA/hr
+                </div>
+            </div>
+
+            <div class="orb-container">
+                <div class="quantum-orb"></div>
+                <i class="fas fa-circle-nodes orb-icon"></i>
+            </div>
+
+            <button class="mining-btn" onclick="startMining()">
+                <i class="fas fa-hammer"></i> START 24H MINING
+            </button>
+        </div>
+
+        <div class="status-bar">
+            <span class="status-left"><i class="fas fa-network-wired"></i> Network Status:</span>
+            <span class="status-right">● Nodes Active</span>
+        </div>
+
+        <div class="bottom-nav">
+            <div class="nav-item active"><i class="fas fa-house"></i><span>Home</span></div>
+            <div class="nav-item" onclick="alert('Tasks Panel: Coming Soon')"><i class="fas fa-tasks"></i><span>Tasks</span></div>
+            <div class="nav-item" onclick="alert('Invite Team System: Under Development')"><i class="fas fa-user-group"></i><span>Invite</span></div>
+            <div class="nav-item" onclick="alert('KYC Lock Status: 1 Year countdown active')"><i class="fas fa-shield-halved"></i><span>KYC</span></div>
+        </div>
+    </div>
+
+    <script>
+        // Temporary test logic for visual tracking
+        let baseBalance = 0.0000;
+        function startMining() {
+            alert("Mining started successfully! Synchronizing nodes...");
+            setInterval(() => {
+                baseBalance += 0.0027; // Roughly 10 coins per hour simulation
+                document.getElementById('balance').innerText = baseBalance.toFixed(4);
+            }, 1000);
+        }
+    </script>
+
+</body>
+</html>
