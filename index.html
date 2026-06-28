@@ -14,7 +14,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            height: 720px;
             margin: 0;
         }
         .phone-screen {
@@ -50,6 +50,7 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            overflow: hidden;
         }
         .balance-label {
             font-size: 11px;
@@ -154,7 +155,6 @@
         }
         .task-action-btn.done { background: rgba(255, 255, 255, 0.1); color: #8a7fa4; cursor: not-allowed; }
 
-        /* 👥 NEW REFERRAL UI PANEL STYLES */
         .invite-container {
             text-align: center;
             display: flex;
@@ -171,10 +171,7 @@
             font-size: 12px;
             color: #8a7fa4;
         }
-        .invite-actions {
-            display: flex;
-            gap: 10px;
-        }
+        .invite-actions { display: flex; gap: 10px; }
         .action-btn {
             flex: 1;
             background: rgba(0, 242, 254, 0.1);
@@ -190,9 +187,64 @@
             align-items: center;
             gap: 8px;
         }
-        .action-btn.primary {
-            background: #00f2fe;
-            color: #030108;
+        .action-btn.primary { background: #00f2fe; color: #030108; }
+
+        /* 🏆 NEW MAJOR-STYLE LEADERBOARD STYLES */
+        .leaderboard-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+            flex-grow: 1;
+            margin-top: 15px;
+            padding-right: 5px;
+        }
+        .leaderboard-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 12px 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .leader-left { display: flex; align-items: center; gap: 12px; }
+        .leader-rank {
+            font-size: 14px;
+            font-weight: bold;
+            color: #8a7fa4;
+            width: 24px;
+        }
+        .rank-1 { color: #ffd700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+        .rank-2 { color: #c0c0c0; }
+        .rank-3 { color: #cd7f32; }
+        
+        .leader-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #9d4ede, #00f2fe);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 14px;
+            color: #ffffff;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .leader-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffffff;
+            max-width: 110px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .leader-score {
+            font-size: 14px;
+            font-weight: 700;
+            color: #00ffaa;
         }
 
         .status-bar {
@@ -276,16 +328,23 @@
         <div class="main-card" id="invitePanel" style="display: none; justify-content: flex-start;">
             <div class="invite-container">
                 <div class="balance-label" style="text-align: center;">INVITE FRIENDS & BOOST SPEED</div>
-                
                 <div style="font-size: 30px; margin: 10px 0; color: #00f2fe;"><i class="fas fa-user-plus"></i></div>
                 <p style="font-size: 13px; color: #a297c2; margin: 0 0 10px 0;">Get +2.5 $AURA/hr speed bonus for every active friend you bring into the network!</p>
-                
                 <div class="balance-label" style="text-align: left; font-size: 10px;">YOUR EXCLUSIVE REFERRAL LINK:</div>
                 <div class="invite-box" id="refLinkBox">Loading custom node link...</div>
-
                 <div class="invite-actions">
                     <button class="action-btn" onclick="copyRefLink()"><i class="fas fa-copy"></i> Copy Link</button>
                     <button class="action-btn primary" onclick="shareToTelegram()"><i class="fas fa-paper-plane"></i> Invite Friends</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🏆 NEW LIVE LEADERBOARD INTERFACE PANEL -->
+        <div class="main-card" id="topPanel" style="display: none; justify-content: flex-start;">
+            <div style="width: 100%; display: flex; flex-direction: column; height: 100%;">
+                <div class="balance-label" style="text-align: center; margin-bottom: 5px;">TOP AURA NODE HOLDERS</div>
+                <div class="leaderboard-list" id="leaderboardContainer">
+                    <div style="text-align: center; color: #8a7fa4; margin-top: 50px;"><i class="fas fa-spinner fa-spin"></i> Fetching Global Ranks...</div>
                 </div>
             </div>
         </div>
@@ -299,7 +358,7 @@
             <div class="nav-item active" id="homeNav" onclick="switchTab('home')"><i class="fas fa-house"></i><span>Home</span></div>
             <div class="nav-item" id="tasksNav" onclick="switchTab('tasks')"><i class="fas fa-tasks"></i><span>Tasks</span></div>
             <div class="nav-item" id="inviteNav" onclick="switchTab('invite')"><i class="fas fa-user-group"></i><span>Invite</span></div>
-            <div class="nav-item" onclick="alert('KYC Lock Status: 1 Year countdown active')"><i class="fas fa-shield-halved"></i><span>KYC</span></div>
+            <div class="nav-item" id="topNav" onclick="switchTab('top')"><i class="fas fa-trophy"></i><span>Top</span></div>
         </div>
     </div>
 
@@ -309,9 +368,9 @@
 
         const user = tg.initDataUnsafe?.user || { id: "123456789", first_name: "Explorer" };
         const userId = user.id;
-        const FIREBASE_URL = `https://aura-network-default-rtdb.firebaseio.com/users/${userId}.json`;
+        const FIREBASE_BASE_URL = `https://aura-network-default-rtdb.firebaseio.com/users`;
+        const FIREBASE_URL = `${FIREBASE_BASE_URL}/${userId}.json`;
         
-        // Dynamic Referral Link generation using your absolute bot name identifier
         const REFERRAL_LINK = `https://t.me/auranetworkbot?start=ref_${userId}`;
         document.getElementById('refLinkBox').innerText = REFERRAL_LINK;
 
@@ -320,20 +379,18 @@
         let miningInterval;
 
         function switchTab(tab) {
-            const homeP = document.getElementById('homePanel');
-            const tasksP = document.getElementById('tasksPanel');
-            const inviteP = document.getElementById('invitePanel');
+            const panels = ['homePanel', 'tasksPanel', 'invitePanel', 'topPanel'];
+            const navs = ['homeNav', 'tasksNav', 'inviteNav', 'topNav'];
             
-            const homeN = document.getElementById('homeNav');
-            const tasksN = document.getElementById('tasksNav');
-            const inviteN = document.getElementById('inviteNav');
+            panels.forEach(p => document.getElementById(p).style.display = 'none');
+            navs.forEach(n => document.getElementById(n).classList.remove('active'));
 
-            homeP.style.display = 'none'; tasksP.style.display = 'none'; inviteP.style.display = 'none';
-            homeN.classList.remove('active'); tasksN.classList.remove('active'); inviteN.classList.remove('active');
+            document.getElementById(`${tab}Panel`).style.display = 'flex';
+            document.getElementById(`${tab}Nav`).classList.add('active');
 
-            if (tab === 'home') { homeP.style.display = 'flex'; homeN.classList.add('active'); }
-            else if (tab === 'tasks') { tasksP.style.display = 'flex'; tasksN.classList.add('active'); }
-            else if (tab === 'invite') { inviteP.style.display = 'flex'; inviteN.classList.add('active'); }
+            if (tab === 'top') {
+                fetchLeaderboard();
+            }
         }
 
         async function loadUserData() {
@@ -350,6 +407,59 @@
                     if (data.tg_task_completed === true) setTaskCompletedUI();
                 }
             } catch (err) { console.log("Sync delay"); }
+        }
+
+        // 🏆 FETCH & SORT FIREBASE REAL USERS FOR LEADERBOARD
+        async function fetchLeaderboard() {
+            const container = document.getElementById('leaderboardContainer');
+            try {
+                const response = await fetch(`${FIREBASE_BASE_URL}.json`);
+                const allUsers = await response.json();
+                
+                if (!allUsers) {
+                    container.innerHTML = `<div style='text-align:center;color:#8a7fa4;margin-top:50px;'>No active miners found</div>`;
+                    return;
+                }
+
+                // Convert Firebase object data into sorted Array list format
+                let usersArray = [];
+                Object.keys(allUsers).forEach(key => {
+                    usersArray.push({
+                        name: allUsers[key].first_name || "Unknown Miner",
+                        balance: parseFloat(allUsers[key].balance || 0)
+                    });
+                });
+
+                // Sorting mechanism descending highest to lowest
+                usersArray.sort((a, b) => b.balance - a.balance);
+
+                container.innerHTML = ""; // Clear loader text
+                
+                usersArray.forEach((player, index) => {
+                    let rankClass = "";
+                    let rankDisplay = index + 1;
+                    if (index === 0) rankClass = "rank-1";
+                    else if (index === 1) rankClass = "rank-2";
+                    else if (index === 2) rankClass = "rank-3";
+
+                    const initials = player.name.charAt(0).toUpperCase();
+
+                    const rowHtml = `
+                        <div class="leaderboard-item">
+                            <div class="leader-left">
+                                <span class="leader-rank ${rankClass}">${rankDisplay}</span>
+                                <div class="leader-avatar">${initials}</div>
+                                <span class="leader-name">${player.name}</span>
+                            </div>
+                            <span class="leader-score">${player.balance.toFixed(2)} $AURA</span>
+                        </div>
+                    `;
+                    container.innerHTML += rowHtml;
+                });
+
+            } catch (err) {
+                container.innerHTML = `<div style='text-align:center;color:#ff4a4a;margin-top:50px;'>Error syncing ranking engine</div>`;
+            }
         }
 
         function triggerMiningUI(speedStr) {
@@ -369,7 +479,12 @@
                 await fetch(FIREBASE_URL, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ balance: currentBalance, mining_status: "active", mining_speed: "10.0 $AURA/hr" })
+                    body: JSON.stringify({ 
+                        balance: currentBalance, 
+                        mining_status: "active", 
+                        mining_speed: "10.0 $AURA/hr",
+                        first_name: user.first_name // Ensure real name saves to sync ranking updates
+                    })
                 });
             } catch (err) { console.log("DB sync failure"); }
         }
@@ -393,7 +508,7 @@
                 await fetch(FIREBASE_URL, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ balance: currentBalance, tg_task_completed: true })
+                    body: JSON.stringify({ balance: currentBalance, tg_task_completed: true, first_name: user.first_name })
                 });
             } catch (err) { console.log("Task sync issue"); }
         }
@@ -403,13 +518,11 @@
             btn.innerText = "Completed"; btn.classList.add('done'); btn.disabled = true;
         }
 
-        // 📋 COPY REFERRAL SYSTEM
         function copyRefLink() {
             navigator.clipboard.writeText(REFERRAL_LINK);
             tg.showAlert("Link copied successfully! Share it with your friends.");
         }
 
-        // ✈️ DIRECT TELEGRAM SHARE API INJECTION
         function shareToTelegram() {
             const shareText = encodeURIComponent("🪐 Join Aura Network, start mining $AURA nodes and earn tokens instantly! Live Web3 App open now 🚀");
             const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(REFERRAL_LINK)}&text=${shareText}`;
