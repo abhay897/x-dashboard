@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aura Network Premium Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
             background-color: #030108;
@@ -72,7 +73,6 @@
             font-size: 13px;
             font-weight: 600;
         }
-        /* Quantum Orb Effect (No more broken images) */
         .orb-container {
             width: 140px;
             height: 140px;
@@ -91,6 +91,11 @@
             box-shadow: 0 0 30px rgba(0, 242, 254, 0.5), inset 0 0 20px rgba(157, 78, 221, 0.4);
             animation: rotateOrb 8s linear infinite;
         }
+        .quantum-orb.active-mining {
+            border: 2px dashed #00ffaa;
+            box-shadow: 0 0 35px rgba(0, 255, 170, 0.6), inset 0 0 20px rgba(0, 255, 170, 0.3);
+            animation: rotateOrb 3s linear infinite;
+        }
         .orb-icon {
             position: absolute;
             font-size: 40px;
@@ -98,7 +103,6 @@
             text-shadow: 0 0 15px #00f2fe;
             animation: pulseIcon 2s ease-in-out infinite;
         }
-        /* Glowing Cyan Button */
         .mining-btn {
             background: rgba(0, 242, 254, 0.05);
             border: 2px solid #00f2fe;
@@ -120,7 +124,12 @@
             transform: scale(0.98);
             background: rgba(0, 242, 254, 0.2);
         }
-        /* Status Panel */
+        .mining-btn.mining {
+            border: 2px solid #00ffaa;
+            color: #00ffaa;
+            box-shadow: 0 0 15px rgba(0, 255, 170, 0.2);
+            cursor: not-allowed;
+        }
         .status-bar {
             background: rgba(10, 6, 22, 0.8);
             border: 1px solid rgba(255, 255, 255, 0.05);
@@ -133,8 +142,6 @@
         }
         .status-left { color: #00f2fe; font-weight: 500; }
         .status-right { color: #00ffaa; font-weight: bold; text-shadow: 0 0 8px #00ffaa; }
-
-        /* Bottom Nav Bar */
         .bottom-nav {
             background: #05020a;
             border-top: 1px solid rgba(255, 255, 255, 0.05);
@@ -155,7 +162,6 @@
         .nav-item i { font-size: 20px; margin-bottom: 5px; }
         .nav-item.active { color: #00f2fe; text-shadow: 0 0 10px rgba(0, 242, 254, 0.4); }
 
-        /* Keyframe Animations */
         @keyframes rotateOrb {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -176,16 +182,16 @@
                 <div class="balance-label">VERIFIED BALANCE ($AURA)</div>
                 <div class="balance-val" id="balance">0.0000</div>
                 <div class="speed-badge">
-                    <i class="fas fa-bolt"></i> Speed: <span id="speed">10.0</span> $AURA/hr
+                    <i class="fas fa-bolt"></i> Speed: <span id="speed">0.0</span> $AURA/hr
                 </div>
             </div>
 
             <div class="orb-container">
-                <div class="quantum-orb"></div>
+                <div class="quantum-orb" id="orb"></div>
                 <i class="fas fa-circle-nodes orb-icon"></i>
             </div>
 
-            <button class="mining-btn" onclick="startMining()">
+            <button class="mining-btn" id="miningBtn" onclick="startMining()">
                 <i class="fas fa-hammer"></i> START 24H MINING
             </button>
         </div>
@@ -204,15 +210,98 @@
     </div>
 
     <script>
-        // Temporary test logic for visual tracking
-        let baseBalance = 0.0000;
-        function startMining() {
-            alert("Mining started successfully! Synchronizing nodes...");
-            setInterval(() => {
-                baseBalance += 0.0027; // Roughly 10 coins per hour simulation
-                document.getElementById('balance').innerText = baseBalance.toFixed(4);
+        // Initialize Telegram WebApp Data
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Screen size full pull up
+
+        // Fallback user if opened outside telegram testing
+        const user = tg.initDataUnsafe?.user || { id: "123456789", first_name: "Explorer" };
+        const userId = user.id;
+
+        const FIREBASE_URL = `https://aura-network-default-rtdb.firebaseio.com/users/${userId}.json`;
+
+        let currentBalance = 0.0000;
+        let isMiningActive = false;
+        let miningInterval;
+
+        // 📥 Phase 1: Database se data automatic load karna page open hote hi
+        async function loadUserData() {
+            try {
+                const response = await fetch(FIREBASE_URL);
+                const data = await response.json();
+                
+                if (data) {
+                    currentBalance = parseFloat(data.balance || 0.0324);
+                    document.getElementById('balance').innerText = currentBalance.toFixed(4);
+                    
+                    // Agar backup system me speed logged hai to check karein
+                    if (data.mining_status === "active") {
+                        triggerMiningUI(data.mining_speed || "10.0 $AURA/hr");
+                        startLocalCounter();
+                    }
+                }
+            } catch (err) {
+                console.log("Local Sync Only");
+            }
+        }
+
+        // ⚡ UI State Modification Function
+        function triggerMiningUI(speedStr) {
+            isMiningActive = true;
+            document.getElementById('speed').innerText = speedStr.split(' ')[0];
+            const btn = document.getElementById('miningBtn');
+            btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> MINING ACTIVE`;
+            btn.classList.add('mining');
+            btn.disabled = true;
+            document.getElementById('orb').classList.add('active-mining');
+        }
+
+        // 🔨 Phase 2: Click Trigger System (Data Syncing directly with Cloud REST)
+        async function startMining() {
+            if (isMiningActive) return;
+
+            triggerMiningUI("10.0 $AURA/hr");
+            startLocalCounter();
+
+            // Firebase Core Database updates without libraries
+            const updatePayload = {
+                balance: currentBalance,
+                mining_status: "active",
+                mining_speed: "10.0 $AURA/hr",
+                last_mining_click: new Date().toISOString()
+            };
+
+            try {
+                await fetch(FIREBASE_URL, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatePayload)
+                });
+            } catch (err) {
+                console.log("Cloud sync delayed.");
+            }
+        }
+
+        // Real-time ticking effect on screen dashboard
+        function startLocalCounter() {
+            if (miningInterval) clearInterval(miningInterval);
+            miningInterval = setInterval(async () => {
+                currentBalance += 0.0027; // Increment balance sequentially per second
+                document.getElementById('balance').innerText = currentBalance.toFixed(4);
+
+                // Batch sync to server every 10 ticks to avoid overloading requests
+                if (Math.random() < 0.1) {
+                    fetch(FIREBASE_URL, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ balance: currentBalance })
+                    });
+                }
             }, 1000);
         }
+
+        // Trigger loading on page display execution
+        loadUserData();
     </script>
 
 </body>
