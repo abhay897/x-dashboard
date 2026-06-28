@@ -123,15 +123,12 @@
         .mining-btn:active { transform: scale(0.98); background: rgba(0, 242, 254, 0.2); }
         .mining-btn.mining { border: 2px solid #00ffaa; color: #00ffaa; box-shadow: 0 0 15px rgba(0, 255, 170, 0.2); cursor: not-allowed; }
         
-        /* 📜 TASK LAYOUT DESIGN STYLE SHEET */
         .task-list {
             display: flex;
             flex-direction: column;
             gap: 12px;
             text-align: left;
             margin-top: 15px;
-            overflow-y: auto;
-            max-height: 380px;
         }
         .task-item {
             background: rgba(255, 255, 255, 0.03);
@@ -141,7 +138,6 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            transition: 0.2s;
         }
         .task-info { display: flex; flex-direction: column; gap: 4px; }
         .task-name { font-size: 14px; font-weight: 600; color: #ffffff; }
@@ -156,10 +152,47 @@
             font-size: 12px;
             cursor: pointer;
         }
-        .task-action-btn.done {
-            background: rgba(255, 255, 255, 0.1);
+        .task-action-btn.done { background: rgba(255, 255, 255, 0.1); color: #8a7fa4; cursor: not-allowed; }
+
+        /* 👥 NEW REFERRAL UI PANEL STYLES */
+        .invite-container {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-top: 10px;
+        }
+        .invite-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px dashed rgba(0, 242, 254, 0.3);
+            border-radius: 16px;
+            padding: 15px;
+            word-break: break-all;
+            font-size: 12px;
             color: #8a7fa4;
-            cursor: not-allowed;
+        }
+        .invite-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .action-btn {
+            flex: 1;
+            background: rgba(0, 242, 254, 0.1);
+            border: 1px solid #00f2fe;
+            color: #00f2fe;
+            padding: 12px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+        .action-btn.primary {
+            background: #00f2fe;
+            color: #030108;
         }
 
         .status-bar {
@@ -203,6 +236,7 @@
     <div class="phone-screen">
         <div class="app-title">AURA NETWORK</div>
 
+        <!-- 🏠 HOME INTERFACE PANEL -->
         <div class="main-card" id="homePanel">
             <div>
                 <div class="balance-label">VERIFIED BALANCE ($AURA)</div>
@@ -222,11 +256,11 @@
             </button>
         </div>
 
+        <!-- 📜 TASKS INTERFACE PANEL -->
         <div class="main-card" id="tasksPanel" style="display: none; justify-content: flex-start;">
             <div>
                 <div class="balance-label" style="text-align: center; margin-bottom: 15px;">EARN EXTRAS BY COMPLETING TASKS</div>
                 <div class="task-list">
-                    
                     <div class="task-item">
                         <div class="task-info">
                             <span class="task-name">Join Telegram Channel</span>
@@ -234,7 +268,24 @@
                         </div>
                         <button class="task-action-btn" id="tgTaskBtn" onclick="completeTelegramTask()">Claim</button>
                     </div>
+                </div>
+            </div>
+        </div>
 
+        <!-- 👥 INVITE INTERFACE PANEL -->
+        <div class="main-card" id="invitePanel" style="display: none; justify-content: flex-start;">
+            <div class="invite-container">
+                <div class="balance-label" style="text-align: center;">INVITE FRIENDS & BOOST SPEED</div>
+                
+                <div style="font-size: 30px; margin: 10px 0; color: #00f2fe;"><i class="fas fa-user-plus"></i></div>
+                <p style="font-size: 13px; color: #a297c2; margin: 0 0 10px 0;">Get +2.5 $AURA/hr speed bonus for every active friend you bring into the network!</p>
+                
+                <div class="balance-label" style="text-align: left; font-size: 10px;">YOUR EXCLUSIVE REFERRAL LINK:</div>
+                <div class="invite-box" id="refLinkBox">Loading custom node link...</div>
+
+                <div class="invite-actions">
+                    <button class="action-btn" onclick="copyRefLink()"><i class="fas fa-copy"></i> Copy Link</button>
+                    <button class="action-btn primary" onclick="shareToTelegram()"><i class="fas fa-paper-plane"></i> Invite Friends</button>
                 </div>
             </div>
         </div>
@@ -247,7 +298,7 @@
         <div class="bottom-nav">
             <div class="nav-item active" id="homeNav" onclick="switchTab('home')"><i class="fas fa-house"></i><span>Home</span></div>
             <div class="nav-item" id="tasksNav" onclick="switchTab('tasks')"><i class="fas fa-tasks"></i><span>Tasks</span></div>
-            <div class="nav-item" onclick="alert('Invite Team System: Under Development')"><i class="fas fa-user-group"></i><span>Invite</span></div>
+            <div class="nav-item" id="inviteNav" onclick="switchTab('invite')"><i class="fas fa-user-group"></i><span>Invite</span></div>
             <div class="nav-item" onclick="alert('KYC Lock Status: 1 Year countdown active')"><i class="fas fa-shield-halved"></i><span>KYC</span></div>
         </div>
     </div>
@@ -259,49 +310,44 @@
         const user = tg.initDataUnsafe?.user || { id: "123456789", first_name: "Explorer" };
         const userId = user.id;
         const FIREBASE_URL = `https://aura-network-default-rtdb.firebaseio.com/users/${userId}.json`;
+        
+        // Dynamic Referral Link generation using your absolute bot name identifier
+        const REFERRAL_LINK = `https://t.me/auranetworkbot?start=ref_${userId}`;
+        document.getElementById('refLinkBox').innerText = REFERRAL_LINK;
 
         let currentBalance = 0.0000;
         let isMiningActive = false;
         let miningInterval;
 
-        // 🎛️ Navigation Switching Mechanism
         function switchTab(tab) {
             const homeP = document.getElementById('homePanel');
             const tasksP = document.getElementById('tasksPanel');
+            const inviteP = document.getElementById('invitePanel');
+            
             const homeN = document.getElementById('homeNav');
             const tasksN = document.getElementById('tasksNav');
+            const inviteN = document.getElementById('inviteNav');
 
-            if (tab === 'home') {
-                homeP.style.display = 'flex';
-                tasksP.style.display = 'none';
-                homeN.classList.add('active');
-                tasksN.classList.remove('active');
-            } else if (tab === 'tasks') {
-                homeP.style.display = 'none';
-                tasksP.style.display = 'flex';
-                homeN.classList.remove('active');
-                tasksN.classList.add('active');
-            }
+            homeP.style.display = 'none'; tasksP.style.display = 'none'; inviteP.style.display = 'none';
+            homeN.classList.remove('active'); tasksN.classList.remove('active'); inviteN.classList.remove('active');
+
+            if (tab === 'home') { homeP.style.display = 'flex'; homeN.classList.add('active'); }
+            else if (tab === 'tasks') { tasksP.style.display = 'flex'; tasksN.classList.add('active'); }
+            else if (tab === 'invite') { inviteP.style.display = 'flex'; inviteN.classList.add('active'); }
         }
 
         async function loadUserData() {
             try {
                 const response = await fetch(FIREBASE_URL);
                 const data = await response.json();
-                
                 if (data) {
-                    currentBalance = parseFloat(data.balance || 0.0324);
+                    currentBalance = parseFloat(data.balance || 0.0000);
                     document.getElementById('balance').innerText = currentBalance.toFixed(4);
-                    
                     if (data.mining_status === "active") {
                         triggerMiningUI(data.mining_speed || "10.0 $AURA/hr");
                         startLocalCounter();
                     }
-
-                    // Check if task is already verified in historical database logs
-                    if (data.tg_task_completed === true) {
-                        setTaskCompletedUI();
-                    }
+                    if (data.tg_task_completed === true) setTaskCompletedUI();
                 }
             } catch (err) { console.log("Sync delay"); }
         }
@@ -311,8 +357,7 @@
             document.getElementById('speed').innerText = speedStr.split(' ')[0];
             const btn = document.getElementById('miningBtn');
             btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> MINING ACTIVE`;
-            btn.classList.add('mining');
-            btn.disabled = true;
+            btn.classList.add('mining'); btn.disabled = true;
             document.getElementById('orb').classList.add('active-mining');
         }
 
@@ -320,18 +365,13 @@
             if (isMiningActive) return;
             triggerMiningUI("10.0 $AURA/hr");
             startLocalCounter();
-
             try {
                 await fetch(FIREBASE_URL, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        balance: currentBalance,
-                        mining_status: "active",
-                        mining_speed: "10.0 $AURA/hr"
-                    })
+                    body: JSON.stringify({ balance: currentBalance, mining_status: "active", mining_speed: "10.0 $AURA/hr" })
                 });
-            } catch (err) { console.log("Database delay"); }
+            } catch (err) { console.log("DB sync failure"); }
         }
 
         function startLocalCounter() {
@@ -342,40 +382,41 @@
             }, 1000);
         }
 
-        // 📢 REAL TELEGRAM REDIRECTION & SYNC REWARD LOGIC
         async function completeTelegramTask() {
             const taskBtn = document.getElementById('tgTaskBtn');
             if (taskBtn.classList.contains('done')) return;
-
-            // Direct route redirect execution seamlessly matching official channel URL
             window.open("https://t.me/auranetwork_global", "_blank");
-
-            // Awarding immediate cloud token value parameters
             currentBalance += 10.0000;
             document.getElementById('balance').innerText = currentBalance.toFixed(4);
             setTaskCompletedUI();
-
             try {
                 await fetch(FIREBASE_URL, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        balance: currentBalance,
-                        tg_task_completed: true
-                    })
+                    body: JSON.stringify({ balance: currentBalance, tg_task_completed: true })
                 });
-            } catch (err) { console.log("Sync issue"); }
+            } catch (err) { console.log("Task sync issue"); }
         }
 
         function setTaskCompletedUI() {
             const btn = document.getElementById('tgTaskBtn');
-            btn.innerText = "Completed";
-            btn.classList.add('done');
-            btn.disabled = true;
+            btn.innerText = "Completed"; btn.classList.add('done'); btn.disabled = true;
+        }
+
+        // 📋 COPY REFERRAL SYSTEM
+        function copyRefLink() {
+            navigator.clipboard.writeText(REFERRAL_LINK);
+            tg.showAlert("Link copied successfully! Share it with your friends.");
+        }
+
+        // ✈️ DIRECT TELEGRAM SHARE API INJECTION
+        function shareToTelegram() {
+            const shareText = encodeURIComponent("🪐 Join Aura Network, start mining $AURA nodes and earn tokens instantly! Live Web3 App open now 🚀");
+            const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(REFERRAL_LINK)}&text=${shareText}`;
+            tg.openTelegramLink(telegramShareUrl);
         }
 
         loadUserData();
     </script>
-
 </body>
 </html>
