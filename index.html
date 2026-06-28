@@ -14,7 +14,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 720px;
+            height: 100vh;
             margin: 0;
         }
         .phone-screen {
@@ -159,14 +159,14 @@
             text-align: center;
             display: flex;
             flex-direction: column;
-            gap: 20px;
-            margin-top: 10px;
+            gap: 15px;
+            margin-top: 5px;
         }
         .invite-box {
             background: rgba(255, 255, 255, 0.03);
             border: 1px dashed rgba(0, 242, 254, 0.3);
             border-radius: 16px;
-            padding: 15px;
+            padding: 12px;
             word-break: break-all;
             font-size: 12px;
             color: #8a7fa4;
@@ -189,7 +189,6 @@
         }
         .action-btn.primary { background: #00f2fe; color: #030108; }
 
-        /* 🏆 NEW MAJOR-STYLE LEADERBOARD STYLES */
         .leaderboard-list {
             display: flex;
             flex-direction: column;
@@ -209,12 +208,7 @@
             justify-content: space-between;
         }
         .leader-left { display: flex; align-items: center; gap: 12px; }
-        .leader-rank {
-            font-size: 14px;
-            font-weight: bold;
-            color: #8a7fa4;
-            width: 24px;
-        }
+        .leader-rank { font-size: 14px; font-weight: bold; color: #8a7fa4; width: 24px; }
         .rank-1 { color: #ffd700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
         .rank-2 { color: #c0c0c0; }
         .rank-3 { color: #cd7f32; }
@@ -230,22 +224,9 @@
             font-weight: bold;
             font-size: 14px;
             color: #ffffff;
-            border: 1px solid rgba(255,255,255,0.2);
         }
-        .leader-name {
-            font-size: 14px;
-            font-weight: 600;
-            color: #ffffff;
-            max-width: 110px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        .leader-score {
-            font-size: 14px;
-            font-weight: 700;
-            color: #00ffaa;
-        }
+        .leader-name { font-size: 14px; font-weight: 600; color: #ffffff; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .leader-score { font-size: 14px; font-weight: 700; color: #00ffaa; }
 
         .status-bar {
             background: rgba(10, 6, 22, 0.8);
@@ -288,7 +269,6 @@
     <div class="phone-screen">
         <div class="app-title">AURA NETWORK</div>
 
-        <!-- 🏠 HOME INTERFACE PANEL -->
         <div class="main-card" id="homePanel">
             <div>
                 <div class="balance-label">VERIFIED BALANCE ($AURA)</div>
@@ -297,18 +277,15 @@
                     <i class="fas fa-bolt"></i> Speed: <span id="speed">0.0</span> $AURA/hr
                 </div>
             </div>
-
             <div class="orb-container">
                 <div class="quantum-orb" id="orb"></div>
                 <i class="fas fa-circle-nodes orb-icon"></i>
             </div>
-
             <button class="mining-btn" id="miningBtn" onclick="startMining()">
                 <i class="fas fa-hammer"></i> START 24H MINING
             </button>
         </div>
 
-        <!-- 📜 TASKS INTERFACE PANEL -->
         <div class="main-card" id="tasksPanel" style="display: none; justify-content: flex-start;">
             <div>
                 <div class="balance-label" style="text-align: center; margin-bottom: 15px;">EARN EXTRAS BY COMPLETING TASKS</div>
@@ -324,7 +301,6 @@
             </div>
         </div>
 
-        <!-- 👥 INVITE INTERFACE PANEL -->
         <div class="main-card" id="invitePanel" style="display: none; justify-content: flex-start;">
             <div class="invite-container">
                 <div class="balance-label" style="text-align: center;">INVITE FRIENDS & BOOST SPEED</div>
@@ -339,7 +315,6 @@
             </div>
         </div>
 
-        <!-- 🏆 NEW LIVE LEADERBOARD INTERFACE PANEL -->
         <div class="main-card" id="topPanel" style="display: none; justify-content: flex-start;">
             <div style="width: 100%; display: flex; flex-direction: column; height: 100%;">
                 <div class="balance-label" style="text-align: center; margin-bottom: 5px;">TOP AURA NODE HOLDERS</div>
@@ -377,6 +352,7 @@
         let currentBalance = 0.0000;
         let isMiningActive = false;
         let miningInterval;
+        let currentSpeed = 0.0;
 
         function switchTab(tab) {
             const panels = ['homePanel', 'tasksPanel', 'invitePanel', 'topPanel'];
@@ -388,9 +364,7 @@
             document.getElementById(`${tab}Panel`).style.display = 'flex';
             document.getElementById(`${tab}Nav`).classList.add('active');
 
-            if (tab === 'top') {
-                fetchLeaderboard();
-            }
+            if (tab === 'top') fetchLeaderboard();
         }
 
         async function loadUserData() {
@@ -400,66 +374,22 @@
                 if (data) {
                     currentBalance = parseFloat(data.balance || 0.0000);
                     document.getElementById('balance').innerText = currentBalance.toFixed(4);
+                    
+                    let speedStr = data.mining_speed || "10.0 $AURA/hr";
+                    currentSpeed = parseFloat(speedStr.split(' ')[0]);
+                    document.getElementById('speed').innerText = currentSpeed.toFixed(1);
+
                     if (data.mining_status === "active") {
-                        triggerMiningUI(data.mining_speed || "10.0 $AURA/hr");
+                        triggerMiningUI(speedStr);
                         startLocalCounter();
                     }
                     if (data.tg_task_completed === true) setTaskCompletedUI();
+                } else {
+                    // Initialize if missing but started from direct web view
+                    await syncToDatabase(0.0000, "inactive", "10.0 $AURA/hr", false);
+                    document.getElementById('speed').innerText = "10.0";
                 }
-            } catch (err) { console.log("Sync delay"); }
-        }
-
-        // 🏆 FETCH & SORT FIREBASE REAL USERS FOR LEADERBOARD
-        async function fetchLeaderboard() {
-            const container = document.getElementById('leaderboardContainer');
-            try {
-                const response = await fetch(`${FIREBASE_BASE_URL}.json`);
-                const allUsers = await response.json();
-                
-                if (!allUsers) {
-                    container.innerHTML = `<div style='text-align:center;color:#8a7fa4;margin-top:50px;'>No active miners found</div>`;
-                    return;
-                }
-
-                // Convert Firebase object data into sorted Array list format
-                let usersArray = [];
-                Object.keys(allUsers).forEach(key => {
-                    usersArray.push({
-                        name: allUsers[key].first_name || "Unknown Miner",
-                        balance: parseFloat(allUsers[key].balance || 0)
-                    });
-                });
-
-                // Sorting mechanism descending highest to lowest
-                usersArray.sort((a, b) => b.balance - a.balance);
-
-                container.innerHTML = ""; // Clear loader text
-                
-                usersArray.forEach((player, index) => {
-                    let rankClass = "";
-                    let rankDisplay = index + 1;
-                    if (index === 0) rankClass = "rank-1";
-                    else if (index === 1) rankClass = "rank-2";
-                    else if (index === 2) rankClass = "rank-3";
-
-                    const initials = player.name.charAt(0).toUpperCase();
-
-                    const rowHtml = `
-                        <div class="leaderboard-item">
-                            <div class="leader-left">
-                                <span class="leader-rank ${rankClass}">${rankDisplay}</span>
-                                <div class="leader-avatar">${initials}</div>
-                                <span class="leader-name">${player.name}</span>
-                            </div>
-                            <span class="leader-score">${player.balance.toFixed(2)} $AURA</span>
-                        </div>
-                    `;
-                    container.innerHTML += rowHtml;
-                });
-
-            } catch (err) {
-                container.innerHTML = `<div style='text-align:center;color:#ff4a4a;margin-top:50px;'>Error syncing ranking engine</div>`;
-            }
+            } catch (err) { console.log("Sync error"); }
         }
 
         function triggerMiningUI(speedStr) {
@@ -471,30 +401,79 @@
             document.getElementById('orb').classList.add('active-mining');
         }
 
+        function startLocalCounter() {
+            if (miningInterval) clearInterval(miningInterval);
+            const increment = currentSpeed / 3600; // per second rate calculation
+            miningInterval = setInterval(async () => {
+                currentBalance += increment;
+                document.getElementById('balance').innerText = currentBalance.toFixed(4);
+                
+                // Real-time background continuous state backup interval checking every 15 seconds
+                if (Math.floor(currentBalance * 1000) % 15 === 0) {
+                    syncToDatabase(currentBalance, "active", `${currentSpeed} $AURA/hr`, null);
+                }
+            }, 1000);
+        }
+
         async function startMining() {
             if (isMiningActive) return;
-            triggerMiningUI("10.0 $AURA/hr");
+            currentSpeed = currentSpeed > 0 ? currentSpeed : 10.0;
+            triggerMiningUI(`${currentSpeed} $AURA/hr`);
             startLocalCounter();
+            await syncToDatabase(currentBalance, "active", `${currentSpeed} $AURA/hr`, null);
+        }
+
+        async function syncToDatabase(bal, status, spd, taskStatus) {
             try {
+                let patchData = { balance: bal, first_name: user.first_name || "Explorer" };
+                if (status) patchData.mining_status = status;
+                if (spd) patchData.mining_speed = spd;
+                if (taskStatus !== null) patchData.tg_task_completed = taskStatus;
+
                 await fetch(FIREBASE_URL, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        balance: currentBalance, 
-                        mining_status: "active", 
-                        mining_speed: "10.0 $AURA/hr",
-                        first_name: user.first_name // Ensure real name saves to sync ranking updates
-                    })
+                    body: JSON.stringify(patchData)
                 });
-            } catch (err) { console.log("DB sync failure"); }
+            } catch (err) { console.log("DB update delayed"); }
         }
 
-        function startLocalCounter() {
-            if (miningInterval) clearInterval(miningInterval);
-            miningInterval = setInterval(() => {
-                currentBalance += 0.0027;
-                document.getElementById('balance').innerText = currentBalance.toFixed(4);
-            }, 1000);
+        async function fetchLeaderboard() {
+            const container = document.getElementById('leaderboardContainer');
+            try {
+                const response = await fetch(`${FIREBASE_BASE_URL}.json`);
+                const allUsers = await response.json();
+                if (!allUsers) {
+                    container.innerHTML = `<div style='text-align:center;color:#8a7fa4;margin-top:50px;'>No active miners found</div>`;
+                    return;
+                }
+                let usersArray = [];
+                Object.keys(allUsers).forEach(key => {
+                    usersArray.push({
+                        name: allUsers[key].first_name || "Unknown Miner",
+                        balance: parseFloat(allUsers[key].balance || 0)
+                    });
+                });
+                usersArray.sort((a, b) => b.balance - a.balance);
+                container.innerHTML = "";
+                usersArray.forEach((player, index) => {
+                    let rankClass = "";
+                    let rankDisplay = index + 1;
+                    if (index === 0) rankClass = "rank-1";
+                    else if (index === 1) rankClass = "rank-2";
+                    else if (index === 2) rankClass = "rank-3";
+                    const initials = player.name.charAt(0).toUpperCase();
+                    container.innerHTML += `
+                        <div class="leaderboard-item">
+                            <div class="leader-left">
+                                <span class="leader-rank ${rankClass}">${rankDisplay}</span>
+                                <div class="leader-avatar">${initials}</div>
+                                <span class="leader-name">${player.name}</span>
+                            </div>
+                            <span class="leader-score">${player.balance.toFixed(2)} $AURA</span>
+                        </div>`;
+                });
+            } catch (err) { container.innerHTML = `<div style='text-align:center;color:#ff4a4a;margin-top:50px;'>Error syncing rankings</div>`; }
         }
 
         async function completeTelegramTask() {
@@ -504,13 +483,7 @@
             currentBalance += 10.0000;
             document.getElementById('balance').innerText = currentBalance.toFixed(4);
             setTaskCompletedUI();
-            try {
-                await fetch(FIREBASE_URL, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ balance: currentBalance, tg_task_completed: true, first_name: user.first_name })
-                });
-            } catch (err) { console.log("Task sync issue"); }
+            await syncToDatabase(currentBalance, null, null, true);
         }
 
         function setTaskCompletedUI() {
@@ -518,15 +491,10 @@
             btn.innerText = "Completed"; btn.classList.add('done'); btn.disabled = true;
         }
 
-        function copyRefLink() {
-            navigator.clipboard.writeText(REFERRAL_LINK);
-            tg.showAlert("Link copied successfully! Share it with your friends.");
-        }
-
+        function copyRefLink() { navigator.clipboard.writeText(REFERRAL_LINK); tg.showAlert("Link copied successfully!"); }
         function shareToTelegram() {
             const shareText = encodeURIComponent("🪐 Join Aura Network, start mining $AURA nodes and earn tokens instantly! Live Web3 App open now 🚀");
-            const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(REFERRAL_LINK)}&text=${shareText}`;
-            tg.openTelegramLink(telegramShareUrl);
+            tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(REFERRAL_LINK)}&text=${shareText}`);
         }
 
         loadUserData();
