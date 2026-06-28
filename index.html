@@ -120,16 +120,48 @@
             gap: 12px;
             letter-spacing: 1px;
         }
-        .mining-btn:active {
-            transform: scale(0.98);
-            background: rgba(0, 242, 254, 0.2);
+        .mining-btn:active { transform: scale(0.98); background: rgba(0, 242, 254, 0.2); }
+        .mining-btn.mining { border: 2px solid #00ffaa; color: #00ffaa; box-shadow: 0 0 15px rgba(0, 255, 170, 0.2); cursor: not-allowed; }
+        
+        /* 📜 TASK LAYOUT DESIGN STYLE SHEET */
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            text-align: left;
+            margin-top: 15px;
+            overflow-y: auto;
+            max-height: 380px;
         }
-        .mining-btn.mining {
-            border: 2px solid #00ffaa;
-            color: #00ffaa;
-            box-shadow: 0 0 15px rgba(0, 255, 170, 0.2);
+        .task-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: 0.2s;
+        }
+        .task-info { display: flex; flex-direction: column; gap: 4px; }
+        .task-name { font-size: 14px; font-weight: 600; color: #ffffff; }
+        .task-reward { font-size: 12px; color: #00ffaa; font-weight: bold; }
+        .task-action-btn {
+            background: #00f2fe;
+            border: none;
+            color: #030108;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .task-action-btn.done {
+            background: rgba(255, 255, 255, 0.1);
+            color: #8a7fa4;
             cursor: not-allowed;
         }
+
         .status-bar {
             background: rgba(10, 6, 22, 0.8);
             border: 1px solid rgba(255, 255, 255, 0.05);
@@ -162,14 +194,8 @@
         .nav-item i { font-size: 20px; margin-bottom: 5px; }
         .nav-item.active { color: #00f2fe; text-shadow: 0 0 10px rgba(0, 242, 254, 0.4); }
 
-        @keyframes rotateOrb {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        @keyframes pulseIcon {
-            0%, 100% { transform: scale(1); opacity: 0.9; }
-            50% { transform: scale(1.1); opacity: 1; text-shadow: 0 0 25px #00f2fe; }
-        }
+        @keyframes rotateOrb { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes pulseIcon { 0%, 100% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.1); opacity: 1; text-shadow: 0 0 25px #00f2fe; } }
     </style>
 </head>
 <body>
@@ -177,7 +203,7 @@
     <div class="phone-screen">
         <div class="app-title">AURA NETWORK</div>
 
-        <div class="main-card">
+        <div class="main-card" id="homePanel">
             <div>
                 <div class="balance-label">VERIFIED BALANCE ($AURA)</div>
                 <div class="balance-val" id="balance">0.0000</div>
@@ -196,35 +222,68 @@
             </button>
         </div>
 
+        <div class="main-card" id="tasksPanel" style="display: none; justify-content: flex-start;">
+            <div>
+                <div class="balance-label" style="text-align: center; margin-bottom: 15px;">EARN EXTRAS BY COMPLETING TASKS</div>
+                <div class="task-list">
+                    
+                    <div class="task-item">
+                        <div class="task-info">
+                            <span class="task-name">Join Telegram Channel</span>
+                            <span class="task-reward">+10.0000 $AURA</span>
+                        </div>
+                        <button class="task-action-btn" id="tgTaskBtn" onclick="completeTelegramTask()">Claim</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
         <div class="status-bar">
             <span class="status-left"><i class="fas fa-network-wired"></i> Network Status:</span>
             <span class="status-right">● Nodes Active</span>
         </div>
 
         <div class="bottom-nav">
-            <div class="nav-item active"><i class="fas fa-house"></i><span>Home</span></div>
-            <div class="nav-item" onclick="alert('Tasks Panel: Coming Soon')"><i class="fas fa-tasks"></i><span>Tasks</span></div>
+            <div class="nav-item active" id="homeNav" onclick="switchTab('home')"><i class="fas fa-house"></i><span>Home</span></div>
+            <div class="nav-item" id="tasksNav" onclick="switchTab('tasks')"><i class="fas fa-tasks"></i><span>Tasks</span></div>
             <div class="nav-item" onclick="alert('Invite Team System: Under Development')"><i class="fas fa-user-group"></i><span>Invite</span></div>
             <div class="nav-item" onclick="alert('KYC Lock Status: 1 Year countdown active')"><i class="fas fa-shield-halved"></i><span>KYC</span></div>
         </div>
     </div>
 
     <script>
-        // Initialize Telegram WebApp Data
         const tg = window.Telegram.WebApp;
-        tg.expand(); // Screen size full pull up
+        tg.expand();
 
-        // Fallback user if opened outside telegram testing
         const user = tg.initDataUnsafe?.user || { id: "123456789", first_name: "Explorer" };
         const userId = user.id;
-
         const FIREBASE_URL = `https://aura-network-default-rtdb.firebaseio.com/users/${userId}.json`;
 
         let currentBalance = 0.0000;
         let isMiningActive = false;
         let miningInterval;
 
-        // 📥 Phase 1: Database se data automatic load karna page open hote hi
+        // 🎛️ Navigation Switching Mechanism
+        function switchTab(tab) {
+            const homeP = document.getElementById('homePanel');
+            const tasksP = document.getElementById('tasksPanel');
+            const homeN = document.getElementById('homeNav');
+            const tasksN = document.getElementById('tasksNav');
+
+            if (tab === 'home') {
+                homeP.style.display = 'flex';
+                tasksP.style.display = 'none';
+                homeN.classList.add('active');
+                tasksN.classList.remove('active');
+            } else if (tab === 'tasks') {
+                homeP.style.display = 'none';
+                tasksP.style.display = 'flex';
+                homeN.classList.remove('active');
+                tasksN.classList.add('active');
+            }
+        }
+
         async function loadUserData() {
             try {
                 const response = await fetch(FIREBASE_URL);
@@ -234,18 +293,19 @@
                     currentBalance = parseFloat(data.balance || 0.0324);
                     document.getElementById('balance').innerText = currentBalance.toFixed(4);
                     
-                    // Agar backup system me speed logged hai to check karein
                     if (data.mining_status === "active") {
                         triggerMiningUI(data.mining_speed || "10.0 $AURA/hr");
                         startLocalCounter();
                     }
+
+                    // Check if task is already verified in historical database logs
+                    if (data.tg_task_completed === true) {
+                        setTaskCompletedUI();
+                    }
                 }
-            } catch (err) {
-                console.log("Local Sync Only");
-            }
+            } catch (err) { console.log("Sync delay"); }
         }
 
-        // ⚡ UI State Modification Function
         function triggerMiningUI(speedStr) {
             isMiningActive = true;
             document.getElementById('speed').innerText = speedStr.split(' ')[0];
@@ -256,51 +316,64 @@
             document.getElementById('orb').classList.add('active-mining');
         }
 
-        // 🔨 Phase 2: Click Trigger System (Data Syncing directly with Cloud REST)
         async function startMining() {
             if (isMiningActive) return;
-
             triggerMiningUI("10.0 $AURA/hr");
             startLocalCounter();
-
-            // Firebase Core Database updates without libraries
-            const updatePayload = {
-                balance: currentBalance,
-                mining_status: "active",
-                mining_speed: "10.0 $AURA/hr",
-                last_mining_click: new Date().toISOString()
-            };
 
             try {
                 await fetch(FIREBASE_URL, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(updatePayload)
+                    body: JSON.stringify({
+                        balance: currentBalance,
+                        mining_status: "active",
+                        mining_speed: "10.0 $AURA/hr"
+                    })
                 });
-            } catch (err) {
-                console.log("Cloud sync delayed.");
-            }
+            } catch (err) { console.log("Database delay"); }
         }
 
-        // Real-time ticking effect on screen dashboard
         function startLocalCounter() {
             if (miningInterval) clearInterval(miningInterval);
-            miningInterval = setInterval(async () => {
-                currentBalance += 0.0027; // Increment balance sequentially per second
+            miningInterval = setInterval(() => {
+                currentBalance += 0.0027;
                 document.getElementById('balance').innerText = currentBalance.toFixed(4);
-
-                // Batch sync to server every 10 ticks to avoid overloading requests
-                if (Math.random() < 0.1) {
-                    fetch(FIREBASE_URL, {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ balance: currentBalance })
-                    });
-                }
             }, 1000);
         }
 
-        // Trigger loading on page display execution
+        // 📢 REAL TELEGRAM REDIRECTION & SYNC REWARD LOGIC
+        async function completeTelegramTask() {
+            const taskBtn = document.getElementById('tgTaskBtn');
+            if (taskBtn.classList.contains('done')) return;
+
+            // Direct route redirect execution seamlessly matching official channel URL
+            window.open("https://t.me/auranetwork_global", "_blank");
+
+            // Awarding immediate cloud token value parameters
+            currentBalance += 10.0000;
+            document.getElementById('balance').innerText = currentBalance.toFixed(4);
+            setTaskCompletedUI();
+
+            try {
+                await fetch(FIREBASE_URL, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        balance: currentBalance,
+                        tg_task_completed: true
+                    })
+                });
+            } catch (err) { console.log("Sync issue"); }
+        }
+
+        function setTaskCompletedUI() {
+            const btn = document.getElementById('tgTaskBtn');
+            btn.innerText = "Completed";
+            btn.classList.add('done');
+            btn.disabled = true;
+        }
+
         loadUserData();
     </script>
 
