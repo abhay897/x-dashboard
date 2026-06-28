@@ -217,7 +217,6 @@
     <div class="phone-screen">
         <div class="app-title">AURA NETWORK</div>
 
-        <!-- 🏠 HOME PANEL -->
         <div class="main-card" id="homePanel">
             <div>
                 <div class="balance-label">VERIFIED BALANCE ($AURA)</div>
@@ -235,7 +234,6 @@
             </button>
         </div>
 
-        <!-- 👤 PROFILE PANEL -->
         <div class="main-card" id="profilePanel" style="display: none; justify-content: flex-start;">
             <div style="width: 100%;">
                 <div class="profile-header">
@@ -254,7 +252,6 @@
             </div>
         </div>
 
-        <!-- 📜 TASKS PANEL -->
         <div class="main-card" id="tasksPanel" style="display: none; justify-content: flex-start;">
             <div style="width: 100%;">
                 <div class="balance-label" style="text-align: center; margin-bottom: 15px;">EARN EXTRAS BY COMPLETING TASKS</div>
@@ -270,7 +267,6 @@
             </div>
         </div>
 
-        <!-- 👥 INVITE PANEL -->
         <div class="main-card" id="invitePanel" style="display: none; justify-content: flex-start;">
             <div class="invite-container">
                 <div class="balance-label" style="text-align: center;">INVITE FRIENDS & BOOST SPEED</div>
@@ -285,7 +281,6 @@
             </div>
         </div>
 
-        <!-- 🏆 TOP HOLDERS PANEL -->
         <div class="main-card" id="topPanel" style="display: none; justify-content: flex-start;">
             <div style="width: 100%; display: flex; flex-direction: column; height: 100%;">
                 <div class="balance-label" style="text-align: center; margin-bottom: 5px;">TOP AURA NODE HOLDERS</div>
@@ -321,7 +316,7 @@
         const REFERRAL_LINK = `https://t.me/xtokenminebot?start=ref_${userId}`;
         document.getElementById('refLinkBox').innerText = REFERRAL_LINK;
 
-        // Populate Profile Configurations
+        // Populate Profile UI Static Values
         document.getElementById('profName').innerText = user.first_name || "Explorer";
         document.getElementById('profAvatar').innerText = (user.first_name || "E").charAt(0).toUpperCase();
         document.getElementById('profUid').innerText = `UID: ${userId}`;
@@ -331,7 +326,7 @@
         let miningInterval;
         let currentSpeed = 10.0;
 
-        // 6 High Balance Indian Dummy Competitors for Leaderboard Bypass
+        // Indian Fake Accounts array to bypass network errors beautifully
         const dummyCompetitors = [
             { name: "Rohan_Crypto 🇮🇳", balance: 1450.7500 },
             { name: "Amit_Aura 🇮🇳", balance: 980.4200 },
@@ -354,14 +349,27 @@
             if (tab === 'top') fetchLeaderboard();
         }
 
+        // 🌟 LOAD USER DATA WITH LOCAL-STORAGE ANTI-RESET SAFEGUARD
         async function loadUserData() {
+            const localBal = localStorage.getItem(`aura_bal_${userId}`);
+            if (localBal) {
+                currentBalance = parseFloat(localBal);
+                document.getElementById('balance').innerText = currentBalance.toFixed(4);
+            }
+
             try {
                 const response = await fetch(FIREBASE_URL);
                 if(!response.ok) throw new Error("Rules restriction fallback layout");
                 const data = await response.json();
+                
                 if (data) {
-                    currentBalance = parseFloat(data.balance || 0.0000);
-                    document.getElementById('balance').innerText = currentBalance.toFixed(4);
+                    const dbBalance = parseFloat(data.balance || 0.0000);
+                    // Database me agar bada balance hai toh local balance ko update karo
+                    if (dbBalance > currentBalance) {
+                        currentBalance = dbBalance;
+                        document.getElementById('balance').innerText = currentBalance.toFixed(4);
+                        localStorage.setItem(`aura_bal_${userId}`, currentBalance);
+                    }
                     
                     let speedStr = data.mining_speed || "10.0 $AURA/hr";
                     currentSpeed = parseFloat(speedStr.split(' ')[0]);
@@ -377,7 +385,7 @@
                     await syncToDatabase(0.0000, "inactive", "10.0 $AURA/hr", false);
                 }
             } catch (err) { 
-                console.log("Using localized session storage sync context profile setup");
+                console.log("Using localized session storage backup strategy");
             }
         }
 
@@ -392,14 +400,19 @@
             document.getElementById('orb').classList.add('active-mining');
         }
 
+        // 🌟 LIVE COUNTER SAVING TO COLD PHONE FLASH MEMORY EVERY SECOND
         function startLocalCounter() {
             if (miningInterval) clearInterval(miningInterval);
             const increment = currentSpeed / 3600;
+            
             miningInterval = setInterval(async () => {
                 currentBalance += increment;
                 document.getElementById('balance').innerText = currentBalance.toFixed(4);
                 
-                if (Math.floor(currentBalance * 1000) % 15 === 0) {
+                localStorage.setItem(`aura_bal_${userId}`, currentBalance);
+                
+                // Pure database backup strategy on every 20 fraction units
+                if (Math.floor(currentBalance * 1000) % 20 === 0) {
                     syncToDatabase(currentBalance, "active", `${currentSpeed} $AURA/hr`, null);
                 }
             }, 1000);
