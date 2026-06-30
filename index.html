@@ -310,13 +310,14 @@
 
         const user = tg.initDataUnsafe?.user || { id: "123456789", first_name: "Explorer" };
         const userId = user.id;
-        const FIREBASE_BASE_URL = `https://aura-network-default-rtdb.firebaseio.com/users`;
+        
+        // 1. AAPKA PERSONAL SECURE DATABASE PATH
+        const FIREBASE_BASE_URL = `https://aura-network-bot-default-rtdb.firebaseio.com/users`;
         const FIREBASE_URL = `${FIREBASE_BASE_URL}/${userId}.json`;
         
         const REFERRAL_LINK = `https://t.me/xtokenminebot?start=ref_${userId}`;
         document.getElementById('refLinkBox').innerText = REFERRAL_LINK;
 
-        // Populate Profile UI Static Values
         document.getElementById('profName').innerText = user.first_name || "Explorer";
         document.getElementById('profAvatar').innerText = (user.first_name || "E").charAt(0).toUpperCase();
         document.getElementById('profUid').innerText = `UID: ${userId}`;
@@ -324,9 +325,9 @@
         let currentBalance = 0.0000;
         let isMiningActive = false;
         let miningInterval;
-        let currentSpeed = 10.0;
+        let currentSpeed = 10.0; // 10.0 $AURA Per Hour
+        const CLAIM_DURATION = 24 * 60 * 60 * 1000; // 24 Ghante milliseconds me
 
-        // Indian Fake Accounts array to bypass network errors beautifully
         const dummyCompetitors = [
             { name: "Rohan_Crypto 🇮🇳", balance: 1450.7500 },
             { name: "Amit_Aura 🇮🇳", balance: 980.4200 },
@@ -349,8 +350,9 @@
             if (tab === 'top') fetchLeaderboard();
         }
 
-        // 🌟 LOAD USER DATA WITH LOCAL-STORAGE ANTI-RESET SAFEGUARD
+        // 🌟 LOAD USER DATA WITH ADVANCED OFFLINE TIME CALCULATION (PI NETWORK ENGINE)
         async function loadUserData() {
+            // LocalStorage backup ko read karo shuruat me reset se bachne ke liye
             const localBal = localStorage.getItem(`aura_bal_${userId}`);
             if (localBal) {
                 currentBalance = parseFloat(localBal);
@@ -359,30 +361,62 @@
 
             try {
                 const response = await fetch(FIREBASE_URL);
-                if(!response.ok) throw new Error("Rules restriction fallback layout");
+                if(!response.ok) throw new Error("Fallback execution trigger");
                 const data = await response.json();
                 
                 if (data) {
-                    const dbBalance = parseFloat(data.balance || 0.0000);
-                    // Database me agar bada balance hai toh local balance ko update karo
-                    if (dbBalance > currentBalance) {
-                        currentBalance = dbBalance;
-                        document.getElementById('balance').innerText = currentBalance.toFixed(4);
-                        localStorage.setItem(`aura_bal_${userId}`, currentBalance);
-                    }
-                    
+                    let dbBalance = parseFloat(data.balance || 0.0000);
                     let speedStr = data.mining_speed || "10.0 $AURA/hr";
                     currentSpeed = parseFloat(speedStr.split(' ')[0]);
+                    
                     document.getElementById('speed').innerText = currentSpeed.toFixed(1);
                     document.getElementById('profSpeed').innerText = speedStr;
 
-                    if (data.mining_status === "active") {
-                        triggerMiningUI(speedStr);
-                        startLocalCounter();
+                    // CHECK FOR OFFLINE MINING EARNINGS
+                    if (data.mining_status === "active" && data.mining_start_time) {
+                        const now = Date.now();
+                        const startTime = parseInt(data.mining_start_time);
+                        const lastCheck = parseInt(data.last_check_time || startTime);
+                        
+                        let endTime = now;
+                        let stillMining = true;
+
+                        // Agar 24 ghante pure ho chuke hain, toh server state stop kar do
+                        if (now - startTime > CLAIM_DURATION) {
+                            endTime = startTime + CLAIM_DURATION;
+                            stillMining = false;
+                        }
+
+                        // Kitne seconds tak user app se offline/bahar tha
+                        const timeDiffInSeconds = Math.floor((endTime - lastCheck) / 1000);
+
+                        if (timeDiffInSeconds > 0) {
+                            // Convert speed from hour to seconds logic
+                            const speedPerSecond = currentSpeed / 3600;
+                            const earnedCoins = timeDiffInSeconds * speedPerSecond;
+                            dbBalance += earnedCoins;
+                        }
+
+                        if (stillMining) {
+                            triggerMiningUI(speedStr);
+                            currentBalance = dbBalance;
+                            startLocalCounter();
+                            await syncToDatabase(currentBalance, "active", `${currentSpeed} $AURA/hr`, null, startTime, endTime);
+                        } else {
+                            currentBalance = dbBalance;
+                            await syncToDatabase(currentBalance, "inactive", `${currentSpeed} $AURA/hr`, null, 0, 0);
+                        }
+                    } else {
+                        if (dbBalance > currentBalance) currentBalance = dbBalance;
                     }
+
+                    document.getElementById('balance').innerText = currentBalance.toFixed(4);
+                    localStorage.setItem(`aura_bal_${userId}`, currentBalance);
+
                     if (data.tg_task_completed === true) setTaskCompletedUI();
                 } else {
-                    await syncToDatabase(0.0000, "inactive", "10.0 $AURA/hr", false);
+                    // Agar user database me bilkul naya hai
+                    await syncToDatabase(currentBalance, "inactive", `${currentSpeed} $AURA/hr`, false, 0, 0);
                 }
             } catch (err) { 
                 console.log("Using localized session storage backup strategy");
@@ -400,38 +434,45 @@
             document.getElementById('orb').classList.add('active-mining');
         }
 
-        // 🌟 LIVE COUNTER SAVING TO COLD PHONE FLASH MEMORY EVERY SECOND
+        // 🌟 LIVE COUNTER & AUTO INTERVAL DATABASE SYNC 
         function startLocalCounter() {
             if (miningInterval) clearInterval(miningInterval);
-            const increment = currentSpeed / 3600;
+            const increment = currentSpeed / 3600; // 1 second ka share
             
             miningInterval = setInterval(async () => {
                 currentBalance += increment;
                 document.getElementById('balance').innerText = currentBalance.toFixed(4);
-                
                 localStorage.setItem(`aura_bal_${userId}`, currentBalance);
                 
-                // Pure database backup strategy on every 20 fraction units
-                if (Math.floor(currentBalance * 1000) % 20 === 0) {
-                    syncToDatabase(currentBalance, "active", `${currentSpeed} $AURA/hr`, null);
+                // Har thodi der me database me state backup update bheje
+                if (Math.floor(currentBalance * 100) % 5 === 0) {
+                    const localStartTime = localStorage.getItem(`aura_start_${userId}`) || Date.now();
+                    syncToDatabase(currentBalance, "active", `${currentSpeed} $AURA/hr`, null, localStartTime, Date.now());
                 }
             }, 1000);
         }
 
         async function startMining() {
             if (isMiningActive) return;
+            const now = Date.now();
             currentSpeed = currentSpeed > 0 ? currentSpeed : 10.0;
+            
+            localStorage.setItem(`aura_start_${userId}`, now);
             triggerMiningUI(`${currentSpeed} $AURA/hr`);
             startLocalCounter();
-            await syncToDatabase(currentBalance, "active", `${currentSpeed} $AURA/hr`, null);
+            
+            await syncToDatabase(currentBalance, "active", `${currentSpeed} $AURA/hr`, null, now, now);
         }
 
-        async function syncToDatabase(bal, status, spd, taskStatus) {
+        // UNIVERSAL DATABASE PATCH METHOD
+        async function syncToDatabase(bal, status, spd, taskStatus, startTime, lastCheck) {
             try {
                 let patchData = { balance: bal, first_name: user.first_name || "Explorer" };
                 if (status) patchData.mining_status = status;
                 if (spd) patchData.mining_speed = spd;
                 if (taskStatus !== null) patchData.tg_task_completed = taskStatus;
+                if (startTime !== undefined && startTime !== 0) patchData.mining_start_time = startTime;
+                if (lastCheck !== undefined && lastCheck !== 0) patchData.last_check_time = lastCheck;
 
                 await fetch(FIREBASE_URL, {
                     method: 'PATCH',
@@ -491,7 +532,7 @@
             currentBalance += 10.0000;
             document.getElementById('balance').innerText = currentBalance.toFixed(4);
             setTaskCompletedUI();
-            await syncToDatabase(currentBalance, null, null, true);
+            await syncToDatabase(currentBalance, null, null, true, 0, 0);
         }
 
         function setTaskCompletedUI() {
@@ -505,6 +546,7 @@
             tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(REFERRAL_LINK)}&text=${shareText}`);
         }
 
+        // Run application core engine
         loadUserData();
     </script>
 </body>
