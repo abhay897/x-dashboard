@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aura Network Premium Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            background-color: #030108;
+            color: #ffffff;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .phone-screen {
+            width: 360px;
+            height: 720px;
+            background: radial-gradient(circle at top, #140d2b 0%, #05020c 100%);
+            border-radius: 28px;
+            box-shadow: 0px 25px 50px rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .app-title {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 800;
+            color: #00f2fe;
+            letter-spacing: 2px;
+            margin-top: 25px;
+            text-shadow: 0 0 15px rgba(0, 242, 254, 0.6);
+        }
+        .main-card {
+            background: rgba(15, 10, 32, 0.65);
+            border: 1px solid rgba(0, 242, 254, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            margin: 15px 20px;
+            padding: 22px;
+            text-align: center;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+        }
+        .balance-label {
+            font-size: 11px;
+            color: #8a7fa4;
+            letter-spacing: 1.5px;
+        }
+        .balance-val {
+            font-size: 38px;
+            font-weight: 700;
+            color: #ffffff;
+            margin: 8px 0;
+            text-shadow: 0 0 20px rgba(0, 242, 254, 0.3);
+        }
+        .speed-badge {
+            background: linear-gradient(135deg, rgba(0, 242, 254, 0.1) 0%, rgba(79, 172, 254, 0.1) 100%);
+            border: 1px solid rgba(0, 242, 254, 0.4);
+            color: #00f2fe;
+            padding: 6px 18px;
+            border-radius: 20px;
+            display: inline-block;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .orb-container {
+            width: 130px;
+            height: 130px;
+            margin: 15px auto;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .quantum-orb {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0,242,254,0.2) 0%, rgba(157,78,221,0.1) 70%);
+            border: 2px dashed #00f2fe;
+            box-shadow: 0 0 30px rgba(0, 242, 254, 0.5), inset 0 0 20px rgba(157, 78, 221, 0.4);
+            animation: rotateOrb 8s linear infinite;
+        }
+        .quantum-orb.active-mining {
+            border: 2px dashed #00ffaa;
+            box-shadow: 0 0 35px rgba(0, 255, 170, 0.6), inset 0 0 20px rgba(0, 255, 170, 0.3);
+            animation: rotateOrb 3s linear infinite;
+        }
+        .orb-icon {
+            position: absolute;
+            font-size: 40px;
+            color: #ffffff;
+            text-shadow: 0 0 15px #00f2fe;
+            animation: pulseIcon 2s ease-in-out infinite;
+        }
+        .mining-btn {
+            background: rgba(0, 242, 254, 0.05);
+            border: 2px solid #00f2fe;
+            color: #ffffff;
+            padding: 15px 32px;
+            font-size: 15px;
+            font-weight: 700;
+            border-radius: 35px;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.3), inset 0 0 15px rgba(0, 242, 254, 0.2);
+            transition: 0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            letter-spacing: 1px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .mining-btn:active { transform: scale(0.98); background: rgba(0, 242, 254, 0.2); }
+        .mining-btn.mining { border: 2px solid #00ffaa; color: #00ffaa; box-shadow: 0 0 15px rgba(0, 255, 170, 0.2); cursor: not-allowed; }
+        
+        /* Profile Layout Styling */
+        .profile-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .profile-avatar {
+            width: 75px;
+            height: 75px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            font-weight: 700;
+            color: #030108;
+        }
+        .profile-uid {
+            font-size: 12px;
+            color: #6c6382;
+            background: rgba(255,255,255,0.04);
+            padding: 4px 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .info-box {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            padding: 14px;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+        }
+        .info-row span:first-child { color: #8a7fa4; }
+        .info-row span:last-child { color: #ffffff; font-weight: 600; }
+
+        .task-list { display: flex; flex-direction: column; gap: 12px; text-align: left; margin-top: 15px; width: 100%; }
+        .task-item { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 14px; display: flex; justify-content: space-between; align-items: center; }
+        .task-info { display: flex; flex-direction: column; gap: 4px; }
+        .task-name { font-size: 14px; font-weight: 600; color: #ffffff; }
+        .task-reward { font-size: 12px; color: #00ffaa; font-weight: bold; }
+        .task-action-btn { background: #00f2fe; border: none; color: #030108; padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 12px; cursor: pointer; }
+        .task-action-btn.done { background: rgba(255, 255, 255, 0.1); color: #8a7fa4; cursor: not-allowed; }
+
+        .invite-container { text-align: center; display: flex; flex-direction: column; gap: 12px; margin-top: 5px; width: 100%; }
+        .invite-box { background: rgba(255, 255, 255, 0.03); border: 1px dashed rgba(0, 242, 254, 0.3); border-radius: 16px; padding: 12px; word-break: break-all; font-size: 12px; color: #8a7fa4; }
+        .invite-actions { display: flex; gap: 10px; }
+        .action-btn { flex: 1; background: rgba(0, 242, 254, 0.1); border: 1px solid #00f2fe; color: #00f2fe; padding: 12px; border-radius: 25px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .action-btn.primary { background: #00f2fe; color: #030108; }
+
+        .leaderboard-list { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex-grow: 1; margin-top: 15px; padding-right: 5px; width: 100%; }
+        .leaderboard-item { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 16px; padding: 12px 15px; display: flex; align-items: center; justify-content: space-between; }
+        .leader-left { display: flex; align-items: center; gap: 12px; }
+        .leader-rank { font-size: 14px; font-weight: bold; color: #8a7fa4; width: 24px; }
+        .rank-1 { color: #ffd700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+        .rank-2 { color: #c0c0c0; }
+        .rank-3 { color: #cd7f32; }
+        
+        .leader-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #9d4ede, #00f2fe); display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 14px; color: #ffffff; }
+        .leader-name { font-size: 14px; font-weight: 600; color: #ffffff; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .leader-score { font-size: 14px; font-weight: 700; color: #00ffaa; }
+
+        .status-bar { background: rgba(10, 6, 22, 0.8); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 14px; margin: 0 20px 15px 20px; padding: 12px; display: flex; justify-content: space-between; font-size: 12px; }
+        .status-left { color: #00f2fe; font-weight: 500; }
+        .status-right { color: #00ffaa; font-weight: bold; text-shadow: 0 0 8px #00ffaa; }
+        .bottom-nav { background: #05020a; border-top: 1px solid rgba(255, 255, 255, 0.05); height: 70px; display: flex; width: 100%; }
+        .nav-item { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #6c6382; font-size: 11px; cursor: pointer; transition: 0.2s; }
+        .nav-item i { font-size: 19px; margin-bottom: 5px; }
+        .nav-item.active { color: #00f2fe; text-shadow: 0 0 10px rgba(0, 242, 254, 0.4); }
+
+        @keyframes rotateOrb { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes pulseIcon { 0%, 100% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.1); opacity: 1; text-shadow: 0 0 25px #00f2fe; } }
+    </style>
+</head>
+<body>
+
+    <div class="phone-screen">
+        <div class="app-title">AURA NETWORK</div>
+
+        <div class="main-card" id="homePanel">
+            <div>
+                <div class="balance-label">VERIFIED BALANCE ($AURA)</div>
+                <div class="balance-val" id="balance">0.0000</div>
+                <div class="speed-badge">
+                    <i class="fas fa-bolt"></i> Speed: <span id="speed">10.0</span> $AURA/hr
+                </div>
+            </div>
+            <div class="orb-container">
+                <div class="quantum-orb" id="orb"></div>
+                <i class="fas fa-circle-nodes orb-icon"></i>
+            </div>
+            <button class="mining-btn" id="miningBtn" onclick="startMining()">
+                <i class="fas fa-hammer"></i> START 24H MINING
+            </button>
+        </div>
+
+        <div class="main-card" id="profilePanel" style="display: none; justify-content: flex-start;">
+            <div style="width: 100%;">
+                <div class="profile-header">
+                    <div class="profile-avatar" id="profAvatar">E</div>
+                    <h2 id="profName" style="margin: 5px 0 2px 0; font-size: 20px;">Explorer</h2>
+                    <span class="profile-uid" id="profUid">UID: --------</span>
+                </div>
+                
+                <div class="balance-label" style="text-align: left; margin-left: 5px;">NODE STATISTICS</div>
+                <div class="info-box">
+                    <div class="info-row"><span>Account Status</span><span style="color: #00ffaa;">Verified ●</span></div>
+                    <div class="info-row"><span>Mining Core</span><span id="profStatus">Inactive</span></div>
+                    <div class="info-row"><span>Engine Speed</span><span id="profSpeed" style="color:#00f2fe;">10.0 $AURA/hr</span></div>
+                    <div class="info-row"><span>Network Class</span><span>Tier-1 Node Holder</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-card" id="tasksPanel" style="display: none; justify-content: flex-start;">
+            <div style="width: 100%;">
+                <div class="balance-label" style="text-align: center; margin-bottom: 15px;">EARN EXTRAS BY COMPLETING TASKS</div>
+                <div class="task-list">
+                    <div class="task-item">
+                        <div class="task-info">
+                            <span class="task-name">Join Telegram Channel</span>
+                            <span class="task-reward">+10.0000 $AURA</span>
+                        </div>
+                        <button class="task-action-btn" id="tgTaskBtn" onclick="completeTelegramTask()">Claim</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-card" id="invitePanel" style="display: none; justify-content: flex-start;">
+            <div class="invite-container">
+                <div class="balance-label" style="text-align: center;">INVITE FRIENDS & BOOST SPEED</div>
+                <div style="font-size: 30px; margin: 5px 0; color: #00f2fe;"><i class="fas fa-user-plus"></i></div>
+                <p style="font-size: 13px; color: #a297c2; margin: 0 0 10px 0;">Get +2.5 $AURA/hr speed bonus for every active friend you bring into the network!</p>
+                <div class="balance-label" style="text-align: left; font-size: 10px;">YOUR EXCLUSIVE REFERRAL LINK:</div>
+                <div class="invite-box" id="refLinkBox">Loading custom node link...</div>
+                <div class="invite-actions">
+                    <button class="action-btn" onclick="copyRefLink()"><i class="fas fa-copy"></i> Copy Link</button>
+                    <button class="action-btn primary" onclick="shareToTelegram()"><i class="fas fa-paper-plane"></i> Invite Friends</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-card" id="topPanel" style="display: none; justify-content: flex-start;">
+            <div style="width: 100%; display: flex; flex-direction: column; height: 100%;">
+                <div class="balance-label" style="text-align: center; margin-bottom: 5px;">TOP AURA NODE HOLDERS</div>
+                <div class="leaderboard-list" id="leaderboardContainer">
+                    <div style="text-align: center; color: #8a7fa4; margin-top: 50px;"><i class="fas fa-spinner fa-spin"></i> Fetching Global Ranks...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <span class="status-left"><i class="fas fa-network-wired"></i> Network Status:</span>
+            <span class="status-right">● Nodes Active</span>
+        </div>
+
+        <div class="bottom-nav">
+            <div class="nav-item active" id="homeNav" onclick="switchTab('home')"><i class="fas fa-house"></i><span>Home</span></div>
+            <div class="nav-item" id="profileNav" onclick="switchTab('profile')"><i class="fas fa-user-circle"></i><span>Profile</span></div>
+            <div class="nav-item" id="tasksNav" onclick="switchTab('tasks')"><i class="fas fa-tasks"></i><span>Tasks</span></div>
+            <div class="nav-item" id="inviteNav" onclick="switchTab('invite')"><i class="fas fa-user-group"></i><span>Invite</span></div>
+            <div class="nav-item" id="topNav" onclick="switchTab('top')"><i class="fas fa-trophy"></i><span>Top</span></div>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        const user = tg.initDataUnsafe?.user || { id: "123456789", first_name: "Explorer" };
+        const userId = user.id;
+        
+        // 1. AAPKA PERSONAL SECURE DATABASE PATH
+        const FIREBASE_BASE_URL = `https://aura-network-bot-default-rtdb.firebaseio.com/users`;
+        const FIREBASE_URL = `${FIREBASE_BASE_URL}/${userId}.json`;
+        
+        const REFERRAL_LINK = `https://t.me/xtokenminebot?start=ref_${userId}`;
+        document.getElementById('refLinkBox').innerText = REFERRAL_LINK;
+
+        document.getElementById('profName').innerText = user.first_name || "Explorer";
+        document.getElementById('profAvatar').innerText = (user.first_name || "E").charAt(0).toUpperCase();
+        document.getElementById('profUid').innerText = `UID: ${userId}`;
+
+        let currentBalance = 0.0000;
+        let isMiningActive = false;
+        let miningInterval;
+        let currentSpeed = 10.0; // 10.0 $AURA Per Hour
+        const CLAIM_DURATION = 24 * 60 * 60 * 1000; // 24 Ghante milliseconds me
+
+        const dummyCompetitors = [
+            { name: "Rohan_Crypto 🇮🇳", balance: 1450.7500 },
+            { name: "Amit_Aura 🇮🇳", balance: 980.4200 },
+            { name: "Vikram_Miner 🇮🇳", balance: 740.1100 },
+            { name: "Priya_Web3 🇮🇳", balance: 520.9000 },
+            { name: "Ankit_Node 🇮🇳", balance: 310.2500 },
+            { name: "Rajesh_Harvest 🇮🇳", balance: 195.6000 }
+        ];
+
+        function switchTab(tab) {
+            const panels = ['homePanel', 'profilePanel', 'tasksPanel', 'invitePanel', 'topPanel'];
+            const navs = ['homeNav', 'profileNav', 'tasksNav', 'inviteNav', 'topNav'];
+            
+            panels.forEach(p => document.getElementById(p).style.display = 'none');
+            navs.forEach(n => document.getElementById(n).classList.remove('active'));
+
+            document.getElementById(`${tab}Panel`).style.display = 'flex';
+            document.getElementById(`${tab}Nav`).classList.add('active');
+
+            if (tab === 'top') fetchLeaderboard();
+        }
+
+        // 🌟 LOAD USER DATA WITH ADVANCED OFFLINE TIME CALCULATION (PI NETWORK ENGINE)
+        async function loadUserData() {
+            // LocalStorage backup ko read karo shuruat me reset se bachne ke liye
+            const localBal = localStorage.getItem(`aura_bal_${userId}`);
+            if (localBal) {
+                currentBalance = parseFloat(localBal);
+                document.getElementById('balance').innerText = currentBalance.toFixed(4);
+            }
+
+            try {
+                const response = await fetch(FIREBASE_URL);
+                if(!response.ok) throw new Error("Fallback execution trigger");
+                const data = await response.json();
+                
+                if (data) {
+                    let dbBalance = parseFloat(data.balance || 0.0000);
+                    let speedStr = data.mining_speed || "10.0 $AURA/hr";
+                    currentSpeed = parseFloat(speedStr.split(' ')[0]);
+                    
+                    document.getElementById('speed').innerText = currentSpeed.toFixed(1);
+                    document.getElementById('profSpeed').innerText = speedStr;
+
+                    // CHECK FOR OFFLINE MINING EARNINGS
+                    if (data.mining_status === "active" && data.mining_start_time) {
+                        const now = Date.now();
+                        const startTime = parseInt(data.mining_start_time);
+                        const lastCheck = parseInt(data.last_check_time || startTime);
+                        
+                        let endTime = now;
+                        let stillMining = true;
+
+                        // Agar 24 ghante pure ho chuke hain, toh server state stop kar do
+                        if (now - startTime > CLAIM_DURATION) {
+                            endTime = startTime + CLAIM_DURATION;
+                            stillMining = false;
+                        }
+
+                        // Kitne seconds tak user app se offline/bahar tha
+                        const timeDiffInSeconds = Math.floor((endTime - lastCheck) / 1000);
+
+                        if (timeDiffInSeconds > 0) {
+                            // Convert speed from hour to seconds logic
+                            const speedPerSecond = currentSpeed / 3600;
+                            const earnedCoins = timeDiffInSeconds * speedPerSecond;
+                            dbBalance += earnedCoins;
+                        }
+
+                        if (stillMining) {
+                            triggerMiningUI(speedStr);
+                            currentBalance = dbBalance;
+                            startLocalCounter();
+                            await syncToDatabase(currentBalance, "active", `${currentSpeed} $AURA/hr`, null, startTime, endTime);
+                        } else {
+                            currentBalance = dbBalance;
+                            await syncToDatabase(currentBalance, "inactive", `${currentSpeed} $AURA/hr`, null, 0, 0);
+                        }
+                    } else {
+                        if (dbBalance > currentBalance) currentBalance = dbBalance;
+                    }
+
+                    document.getElementById('balance').innerText = currentBalance.toFixed(4);
+                    localStorage.setItem(`aura_bal_${userId}`, currentBalance);
+
+                    if (data.tg_task_completed === true) setTaskCompletedUI();
+                } else {
+                    // Agar user database me bilkul naya hai
+                    await syncToDatabase(currentBalance, "inactive", `${currentSpeed} $AURA/hr`, false, 0, 0);
+                }
+            } catch (err) { 
+                console.log("Using localized session storage backup strategy");
+            }
+        }
+
+        function triggerMiningUI(speedStr) {
+            isMiningActive = true;
+            document.getElementById('speed').innerText = speedStr.split(' ')[0];
+            document.getElementById('profStatus').innerText = "Active";
+            document.getElementById('profStatus').style.color = "#00ffaa";
+            const btn = document.getElementById('miningBtn');
+            btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> MINING ACTIVE`;
+            btn.classList.add('mining'); btn.disabled = true;
+            document.getElementById('orb').classList.add('active-mining');
+        }
+
+        // 🌟 LIVE COUNTER & AUTO INTERVAL DATABASE SYNC 
+        function startLocalCounter() {
+            if (miningInterval) clearInterval(miningInterval);
+            const increment = currentSpeed / 3600; // 1 second ka share
+            
+            miningInterval = setInterval(async () => {
+                currentBalance += increment;
+                document.getElementById('balance').innerText = currentBalance.toFixed(4);
+                localStorage.setItem(`aura_bal_${userId}`, currentBalance);
+                
+                // Har thodi der me database me state backup update bheje
+                if (Math.floor(currentBalance * 100) % 5 === 0) {
+                    const localStartTime = localStorage.getItem(`aura_start_${userId}`) || Date.now();
+                    syncToDatabase(currentBalance, "active", `${currentSpeed} $AURA/hr`, null, localStartTime, Date.now());
+                }
+            }, 1000);
+        }
+
+        async function startMining() {
+            if (isMiningActive) return;
+            const now = Date.now();
+            currentSpeed = currentSpeed > 0 ? currentSpeed : 10.0;
+            
+            localStorage.setItem(`aura_start_${userId}`, now);
+            triggerMiningUI(`${currentSpeed} $AURA/hr`);
+            startLocalCounter();
+            
+            await syncToDatabase(currentBalance, "active", `${currentSpeed} $AURA/hr`, null, now, now);
+        }
+
+        // UNIVERSAL DATABASE PATCH METHOD
+        async function syncToDatabase(bal, status, spd, taskStatus, startTime, lastCheck) {
+            try {
+                let patchData = { balance: bal, first_name: user.first_name || "Explorer" };
+                if (status) patchData.mining_status = status;
+                if (spd) patchData.mining_speed = spd;
+                if (taskStatus !== null) patchData.tg_task_completed = taskStatus;
+                if (startTime !== undefined && startTime !== 0) patchData.mining_start_time = startTime;
+                if (lastCheck !== undefined && lastCheck !== 0) patchData.last_check_time = lastCheck;
+
+                await fetch(FIREBASE_URL, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(patchData)
+                });
+            } catch (err) { console.log("DB silent sync bypass executed"); }
+        }
+
+        async function fetchLeaderboard() {
+            const container = document.getElementById('leaderboardContainer');
+            let usersArray = [...dummyCompetitors];
+            
+            try {
+                const response = await fetch(`${FIREBASE_BASE_URL}.json`);
+                if(response.ok) {
+                    const allUsers = await response.json();
+                    if (allUsers) {
+                        Object.keys(allUsers).forEach(key => {
+                            if(allUsers[key] && allUsers[key].first_name && !allUsers[key].first_name.includes("🇮🇳")) {
+                                usersArray.push({
+                                    name: allUsers[key].first_name || "Unknown Miner",
+                                    balance: parseFloat(allUsers[key].balance || 0)
+                                });
+                            }
+                        });
+                    }
+                }
+            } catch (err) { console.log("Safe fallback pipeline initiated"); }
+            
+            usersArray.sort((a, b) => b.balance - a.balance);
+            container.innerHTML = "";
+            
+            usersArray.forEach((player, index) => {
+                let rankClass = "";
+                let rankDisplay = index + 1;
+                if (index === 0) rankClass = "rank-1";
+                else if (index === 1) rankClass = "rank-2";
+                else if (index === 2) rankClass = "rank-3";
+                const initials = player.name.charAt(0).toUpperCase();
+                container.innerHTML += `
+                    <div class="leaderboard-item">
+                        <div class="leader-left">
+                            <span class="leader-rank ${rankClass}">${rankDisplay}</span>
+                            <div class="leader-avatar">${initials}</div>
+                            <span class="leader-name">${player.name}</span>
+                        </div>
+                        <span class="leader-score">${player.balance.toFixed(2)} $AURA</span>
+                    </div>`;
+            });
+        }
+
+        async function completeTelegramTask() {
+            const taskBtn = document.getElementById('tgTaskBtn');
+            if (taskBtn.classList.contains('done')) return;
+            window.open("https://t.me/auranetwork_global", "_blank");
+            currentBalance += 10.0000;
+            document.getElementById('balance').innerText = currentBalance.toFixed(4);
+            setTaskCompletedUI();
+            await syncToDatabase(currentBalance, null, null, true, 0, 0);
+        }
+
+        function setTaskCompletedUI() {
+            const btn = document.getElementById('tgTaskBtn');
+            btn.innerText = "Completed"; btn.classList.add('done'); btn.disabled = true;
+        }
+
+        function copyRefLink() { navigator.clipboard.writeText(REFERRAL_LINK); tg.showAlert("Link copied successfully!"); }
+        function shareToTelegram() {
+            const shareText = encodeURIComponent("🪐 Join Aura Network, start mining $AURA nodes and earn tokens instantly! Live Web3 App open now 🚀");
+            tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(REFERRAL_LINK)}&text=${shareText}`);
+        }
+
+        // Run application core engine
+        loadUserData();
+    </script>
+</body>
+</html>
