@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aura Network Premium Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            background-color: #030108;
+            color: #ffffff;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .phone-screen {
+            width: 360px;
+            height: 720px;
+            background: radial-gradient(circle at top, #140d2b 0%, #030108 100%);
+            border-radius: 28px;
+            box-shadow: 0px 25px 50px rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .app-title {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            padding: 15px;
+            letter-spacing: 1px;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .avatar {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            font-weight: bold;
+            color: #030108;
+            margin-bottom: 10px;
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.4);
+        }
+
+        .username {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .uid-label {
+            font-size: 11px;
+            color: #8a7fa4;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 3px 8px;
+            border-radius: 10px;
+        }
+
+        .balance-label {
+            font-size: 12px;
+            color: #a297c2;
+            margin-top: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .balance-amount {
+            font-size: 36px;
+            font-weight: bold;
+            color: #ffffff;
+            margin: 5px 0;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+        }
+
+        .mining-speed-badge {
+            font-size: 12px;
+            color: #00f2fe;
+            background: rgba(0, 242, 254, 0.1);
+            padding: 5px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            margin-top: 5px;
+        }
+
+        .action-btn {
+            width: 100%;
+            background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+            border: none;
+            color: #030108;
+            padding: 14px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3);
+            margin-bottom: 10px;
+        }
+
+        .action-btn:active {
+            transform: scale(0.98);
+            opacity: 0.9;
+        }
+
+        .action-btn.primary {
+            background: #ffffff;
+            color: #030108;
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
+            margin-top: 10px;
+        }
+
+        .invite-box {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #a297c2;
+            word-break: break-all;
+            text-align: center;
+            margin: 15px 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .profile-info-row {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 14px;
+        }
+        .profile-info-row span:last-child {
+            color: #00f2fe;
+            font-weight: bold;
+        }
+
+        .leaderboard-list {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .status-bar {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 8px 15px;
+            font-size: 11px;
+            color: #8a7fa4;
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .status-right {
+            color: #00f2fe;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .bottom-nav {
+            height: 65px;
+            background: rgba(10, 6, 22, 0.95);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: #61567d;
+            font-size: 10px;
+            cursor: pointer;
+            transition: color 0.2s;
+            flex: 1;
+            padding: 10px 0;
+        }
+
+        .nav-item i {
+            font-size: 18px;
+        }
+
+        .nav-item.active {
+            color: #00f2fe;
+            text-shadow: 0 0 10px rgba(0, 242, 254, 0.4);
+        }
+    </style>
+</head>
+<body>
+
+<div class="phone-screen">
+    <div class="app-title">AURA ENGINE</div>
+
+    <div class="content-area">
+        <!-- 🏠 HOME PANEL -->
+        <div class="main-card" id="homePanel" style="display: flex;">
+            <div class="avatar" id="profAvatar">E</div>
+            <div class="username" id="profName">Loading...</div>
+            <div class="uid-label" id="profUid">UID: --------</div>
+
+            <div class="balance-label">Quantum Balance</div>
+            <div class="balance-amount" id="balanceDisplay">0.0000</div>
+            <div class="mining-speed-badge" id="speedDisplay">10.0 $AURA/hr</div>
+            
+            <div style="margin-top: 25px; width: 100%;">
+                <button class="action-btn" id="mineBtn" onclick="toggleMining()">
+                    <i class="fas fa-plug"></i> Start Mining Node
+                </button>
+            </div>
+        </div>
+
+        <!-- 👤 PROFILE PANEL (Dynamically Fixed) -->
+        <div class="main-card" id="profilePanel" style="display: none; justify-content: flex-start; height: 100%;">
+            <h3 style="margin-top: 5px; color: #00f2fe;"><i class="fas fa-id-card"></i> Validator Profile</h3>
+            <div class="profile-info-row"><span>Node User ID:</span><span id="pUid">--------</span></div>
+            <div class="profile-info-row"><span>Engine Status:</span><span id="pStatus" style="color: #ef4444;">Inactive</span></div>
+            <div class="profile-info-row"><span>Team Members:</span><span id="pTeam">0 Members</span></div>
+            <div class="profile-info-row"><span>Current Velocity:</span><span id="pSpeed">10.0 $AURA/hr</span></div>
+            <div class="balance-label" style="text-align: center; margin-top: 20px;">Your Referral Gateway Link</div>
+            <div class="invite-box" id="pRefBox" style="font-size: 11px;">Loading node link...</div>
+            <button class="action-btn" onclick="copyRefLink()"><i class="fas fa-copy"></i> Copy Referral Link</button>
+        </div>
+
+        <!-- 📋 TASKS PANEL (Reward set to 10 $AURA) -->
+        <div class="main-card" id="tasksPanel" style="display: none; justify-content: flex-start; width: 100%;">
+            <h3 style="margin: 0 0 10px 0;">Social Task Hub</h3>
+            <p style="color: #a297c2; font-size: 13px; margin-bottom: 15px; text-align: center;">Complete official missions to earn fixed network boost drops instantly.</p>
+            <button class="action-btn" onclick="window.open('https://t.me/auranetwork_global', '_blank')">
+                <i class="fab fa-telegram"></i> Join Telegram Channel (+10 $AURA)
+            </button>
+        </div>
+
+        <!-- 👥 INVITE PANEL -->
+        <div class="main-card" id="invitePanel" style="display: none; justify-content: flex-start;">
+            <div class="balance-label" style="text-align: center;">INVITE FRIENDS & BOOST SPEED</div>
+            <div style="font-size: 30px; margin: 15px 0; color: #00f2fe;"><i class="fas fa-user-plus"></i></div>
+            <p style="font-size: 13px; color: #a297c2; margin: 0 0 10px 0; text-align: center;">Get +2.5 $AURA/hr speed bonus for each active validator node you onboard.</p>
+            <div class="invite-box" id="refLinkBox">Loading custom node link...</div>
+            <div class="invite-actions" style="width: 100%;">
+                <button class="action-btn" onclick="copyRefLink()"><i class="fas fa-copy"></i> Copy Link</button>
+                <button class="action-btn primary" onclick="shareToTelegram()"><i class="fas fa-paper-plane"></i> Share Link</button>
+            </div>
+        </div>
+
+        <!-- 🏆 TOP PANEL (Flags Updated as Requested) -->
+        <div class="main-card" id="topPanel" style="display: none; justify-content: flex-start; width: 100%; height: 100%;">
+            <div class="balance-label" style="text-align: center; margin-bottom: 15px;">TOP AURA NODE HOLDERS</div>
+            <div class="leaderboard-list" id="leaderboardContainer">
+                <!-- Loaded Dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <span class="status-left"><i class="fas fa-network-wired"></i> Network Status:</span>
+        <span class="status-right"><span style="width: 6px; height: 6px; background: #00f2fe; border-radius: 50%; display: inline-block;"></span> Nodes Active</span>
+    </div>
+
+    <!-- Navigation Control System -->
+    <div class="bottom-nav">
+        <div class="nav-item active" id="homeNav" onclick="switchTab('home')">
+            <i class="fas fa-house"></i><span>Home</span>
+        </div>
+        <div class="nav-item" id="profileNav" onclick="switchTab('profile')">
+            <i class="fas fa-user-circle"></i><span>Profile</span>
+        </div>
+        <div class="nav-item" id="tasksNav" onclick="switchTab('tasks')">
+            <i class="fas fa-tasks"></i><span>Tasks</span>
+        </div>
+        <div class="nav-item" id="inviteNav" onclick="switchTab('invite')">
+            <i class="fas fa-user-group"></i><span>Invite</span>
+        </div>
+        <div class="nav-item" id="topNav" onclick="switchTab('top')">
+            <i class="fas fa-trophy"></i><span>Top</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    const user = tg.initDataUnsafe?.user || { id: "123456789", first_name: "Explorer" };
+    const userId = user.id;
+
+    const FIREBASE_BASE_URL = 'https://aura-network-bot-default-rtdb.firebaseio.com/users';
+    const FIREBASE_URL = `${FIREBASE_BASE_URL}/${userId}.json`;
+    const REFERRAL_LINK = `https://t.me/auranetworkbot?start=ref_${userId}`;
+    
+    document.getElementById('refLinkBox').innerText = REFERRAL_LINK;
+    document.getElementById('pRefBox').innerText = REFERRAL_LINK;
+    document.getElementById('profName').innerText = user.first_name || "Explorer";
+    document.getElementById('profAvatar').innerText = (user.first_name || "E").charAt(0).toUpperCase();
+    document.getElementById('profUid').innerText = `UID: ${userId}`;
+    document.getElementById('pUid').innerText = userId;
+
+    let currentBalance = 0.0000;
+    let isMiningActive = false;
+    let miningInterval;
+    let currentSpeed = 10.0; 
+    let teamCount = 0;
+
+    // 3 India, 2 USA, 1 Canada Flags with Crypto Related Names
+    const dummyCompetitors = [
+        { name: "Bitcoin_Whale 🇮🇳", balance: 5450.7500 },
+        { name: "Crypto_King 🇮🇳", balance: 4120.4200 },
+        { name: "Solana_Bull 🇺🇸", balance: 3240.1100 },
+        { name: "Ether_Miner 🇺🇸", balance: 2520.9000 },
+        { name: "Web3_Dev 🇨🇦", balance: 1810.2500 },
+        { name: "Aura_Hustler 🇮🇳", balance: 995.6000 }
+    ];
+
+    async function loadUserData() {
+        try {
+            const response = await fetch(FIREBASE_URL);
+            const data = await response.json();
+            if (data) {
+                // Counting Team Members dynamically from database references if nested
+                teamCount = data.team_members_count || 0;
+                document.getElementById('pTeam').innerText = `${teamCount} Members`;
+
+                // Calculate Speed Dynamically based on Team size (Base 10 + 2.5 per referral)
+                currentSpeed = 10.0 + (teamCount * 2.5);
+                document.getElementById('speedDisplay').innerText = `${currentSpeed.toFixed(1)} $AURA/hr`;
+                document.getElementById('pSpeed').innerText = `${currentSpeed.toFixed(1)} $AURA/hr`;
+
+                currentBalance = parseFloat(data.balance || 0.0000);
+                
+                // --- Sabse Important Fix: Time-Gap / Offline Mining Calculation ---
+                if (data.mining_status === "active" && data.last_saved_time) {
+                    const lastSavedTime = parseInt(data.last_saved_time);
+                    const currentTime = Date.now();
+                    const timeDifferenceInSeconds = (currentTime - lastSavedTime) / 1000;
+                    
+                    if (timeDifferenceInSeconds > 0) {
+                        const earnedWhileOffline = (currentSpeed / 3600) * timeDifferenceInSeconds;
+                        currentBalance += earnedWhileOffline;
+                    }
+                    startLocalMiningLoop();
+                }
+                
+                document.getElementById('balanceDisplay').innerText = currentBalance.toFixed(4);
+            }
+        } catch (err) {
+            console.error("Cloud synchronization mapping fail:", err);
+        }
+    }
+
+    function startLocalMiningLoop() {
+        if (isMiningActive) return;
+        isMiningActive = true;
+        
+        const btn = document.getElementById('mineBtn');
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Mining Active...`;
+        btn.style.background = "linear-gradient(90deg, #10b981 0%, #059669 100%)";
+        
+        document.getElementById('pStatus').innerText = "Active Node";
+        document.getElementById('pStatus').style.color = "#10b981";
+        
+        const incrementPerSecond = currentSpeed / 3600;
+        miningInterval = setInterval(() => {
+            currentBalance += incrementPerSecond;
+            document.getElementById('balanceDisplay').innerText = currentBalance.toFixed(4);
+        }, 1000);
+
+        // Save current timestamp and balance to firebase cluster cloud every 5 seconds
+        setInterval(async () => {
+            if (isMiningActive) {
+                try {
+                    await fetch(FIREBASE_URL, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            balance: currentBalance,
+                            last_saved_time: Date.now()
+                        })
+                    });
+                } catch (e) {
+                    console.error("State checkpoint backup sync disruption:", e);
+                }
+            }
+        }, 5000);
+    }
+
+    async function toggleMining() {
+        if (isMiningActive) return;
+
+        startLocalMiningLoop();
+
+        try {
+            await fetch(FIREBASE_URL, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    balance: currentBalance,
+                    mining_status: "active",
+                    last_saved_time: Date.now()
+                })
+            });
+        } catch (e) {
+            console.error("Cloud tracking write interruption:", e);
+        }
+    }
+
+    function switchTab(tab) {
+        const panels = ['homePanel', 'profilePanel', 'tasksPanel', 'invitePanel', 'topPanel'];
+        const navs = ['homeNav', 'profileNav', 'tasksNav', 'inviteNav', 'topNav'];
+
+        panels.forEach(p => document.getElementById(p).style.display = 'none');
+        navs.forEach(n => document.getElementById(n).classList.remove('active'));
+
+        document.getElementById(`${tab}Panel`).style.display = 'flex';
+        document.getElementById(`${tab}Nav`).classList.add('active');
+
+        if (tab === 'top') loadLeaderboard();
+    }
+
+    function loadLeaderboard() {
+        const container = document.getElementById('leaderboardContainer');
+        container.innerHTML = '';
+        dummyCompetitors.forEach((c, idx) => {
+            container.innerHTML += `
+                <div class="leaderboard-item">
+                    <span>#${idx + 1} ${c.name}</span>
+                    <span style="color: #00f2fe; font-weight: bold;">${c.balance.toFixed(2)}</span>
+                </div>
+            `;
+        });
+    }
+
+    function copyRefLink() {
+        navigator.clipboard.writeText(REFERRAL_LINK);
+        alert("Referral link copied safely! Share it to boost node speed. 🪐");
+    }
+
+    function shareToTelegram() {
+        const url = `https://t.me/share/url?url=${encodeURIComponent(REFERRAL_LINK)}&text=${encodeURIComponent("🪐 Join Aura Network and harvest $AURA tokens instantly with my validator link! 🚀")}`;
+        window.open(url, '_blank');
+    }
+
+    loadUserData();
+</script>
+
+</body>
+</html>
